@@ -1,0 +1,4 @@
+---
+# The main config that configures other training (not inference) configs
+# config_filename: "reconnet_config.yaml" # "scsnet_config.yaml"
+config_filename: "scsnet_config.yaml" 

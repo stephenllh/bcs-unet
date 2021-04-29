@@ -1,0 +1,54 @@
+import os
+import yaml
+import pytorch_lightning as pl
+from pytorch_lightning.callbacks import (
+    ModelCheckpoint,
+    EarlyStopping,
+    LearningRateMonitor,
+)
+from pytorch_lightning.loggers import TensorBoardLogger
+from data.data_module import PyTorchDatasetDataModule
+from .learner import SCSNetLearner
+
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+
+def load_config(config_path):
+    with open(os.path.join(config_path)) as file:
+        config = yaml.safe_load(file)
+    return config
+
+
+def run():
+    # main_config = load_config("../config/main_config.yaml")
+    # config = load_config(f"../config/{main_config['config_filename']}")
+    config = load_config("../config/scsnet_config.yaml")
+    data_module = PyTorchDatasetDataModule(config)
+    learner = SCSNetLearner(config)
+    callbacks = [
+        ModelCheckpoint(**config["callbacks"]["checkpoint"]),
+        EarlyStopping(**config["callbacks"]["early_stopping"]),
+        LearningRateMonitor(),
+    ]
+
+    log_name = f"scsnet_{config['dataset_name']}_{int(config['sampling_ratio'] * 10000)}"
+    logger = TensorBoardLogger(save_dir="../logs", name=log_name)
+
+    message = f"Running SCSNet on {config['dataset_name']} dataset. Sampling ratio = {int(config['sampling_ratio'])}"
+    print(message)
+
+    trainer = pl.Trainer(
+        gpus=config["trainer"]["gpu"],
+        max_epochs=config["trainer"]["epochs"],
+        default_root_dir="../",
+        progress_bar_refresh_rate=20,
+        callbacks=callbacks,
+        precision=(16 if config["trainer"]["fp16"] else 32),
+        logger=logger,
+    )
+    trainer.fit(learner, data_module)
+
+
+if __name__ == "__main__":
+    run()

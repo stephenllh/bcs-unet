@@ -1,0 +1,41 @@
+---
+sampling_ratio: 0.125
+in_channels: 2
+# y_shape: 128
+img_dim: 32
+dataset_name: "svhn"
+bcs: True
+
+data_module:
+  data_dir: "../input"
+  batch_size: 128
+  val_percent: 0.1
+  sampling_ratio: 0.125
+
+learner:
+  criterion: "L1" 
+  metrics: ["psnr", "ssim"]  
+  lr: 0.001
+  weight_decay: 0.01
+  scheduler:
+    type: "reduce_lr_on_plateau"  # or "one_cycle"
+    args_reduce_lr_on_plateau:
+      factor: 0.3
+      patience: 5
+      verbose: True
+    arg_one_cycle:
+      pct_start: 0.3
+      verbose: True
+
+callbacks:
+  checkpoint:
+    monitor: "val_loss"
+    save_last: True
+  early_stopping:
+    monitor: "val_loss"
+    patience: 10
+
+trainer:
+  epochs: 100
+  gpu: 1
+  fp16: True
