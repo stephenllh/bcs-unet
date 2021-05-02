@@ -3,50 +3,55 @@ import pandas as pd
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchvision import transforms
+import albumentations as alb
+from albumentations.pytorch.transforms import ToTensorV2
 import pytorch_lightning as pl
-from data.dataset import MNISTDataset, SVHNDataset  # , BSDS500Dataset
+from data.dataset import MNISTDataset, SVHNDataset, BSDS500Dataset
 
 
 class BSDS500DataModule(pl.LightningDataModule):
-    def __init__(
-        self,
-        data_dir,
-        csv_path,
-        batch_size,
-        fold=0,
-        train_transforms=None,
-        test_transforms=None,
-    ):
+    def __init__(self, config):
         super().__init__()
-        self.data_dir = data_dir
-        self.dataframe = pd.read_csv(csv_path)
-        self.batch_size = batch_size
-        self.fold = fold
-        self.train_transforms = train_transforms
-        self.test_transforms = test_transforms
+        self.config = config
+        self.dm_config = config["data_module"]
 
     def setup(self, stage=None):
-        # TODO
-        # self.train_dataset = BSDS500Dataset(
-        #     dataframe=self.dataframe,
-        #     data_dir=self.data_dir,
-        #     mode="train",
-        #     tfms=self.train_transforms,
-        # )
+        train_tfms = alb.Compose(
+            [
+                alb.CenterCrop(256, 256),
+                alb.HorizontalFlip(p=0.5),
+                alb.ColorJitter(brightness=0.2, contrast=0.2),
+                alb.Normalize(mean=(0,), std=(1,)),
+                ToTensorV2(),
+            ]
+        )
+        val_tfms = alb.Compose(
+            [
+                alb.CenterCrop(256, 256),
+                alb.Normalize(mean=(0,), std=(1,)),
+                ToTensorV2(),
+            ]
+        )
 
-        # self.valid_dataset = BSDS500Dataset(
-        #     dataframe=self.dataframe,
-        #     data_dir=self.data_dir,
-        #     mode="valid",
-        #     tfms=self.test_transforms,
-        # )
-        pass
+        self.train_dataset = BSDS500Dataset(
+            sampling_ratio=self.dm_config["sampling_ratio"],
+            bcs=self.config["bcs"],
+            train_val_test="train",
+            tfms=train_tfms,
+        )
+
+        self.val_dataset = BSDS500Dataset(
+            sampling_ratio=self.dm_config["sampling_ratio"],
+            bcs=self.config["bcs"],
+            train_val_test="val",
+            tfms=val_tfms,
+        )
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size)
 
     def val_dataloader(self):
-        return DataLoader(self.valid_dataset, batch_size=self.batch_size)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size)
 
     def test_dataloader(self):
         return DataLoader(self.test_dataset, batch_size=self.batch_size)
@@ -68,7 +73,6 @@ class PyTorchDatasetDataModule(pl.LightningDataModule):
                 transforms.ColorJitter(brightness=0.2, contrast=0.2),
                 transforms.Grayscale(),
                 transforms.ToTensor(),
-                # transforms.Normalize((0.0,), (1.0,)),
             ]
         )
         val_tfms = transforms.Compose(
@@ -76,7 +80,6 @@ class PyTorchDatasetDataModule(pl.LightningDataModule):
                 transforms.Resize(32),
                 transforms.Grayscale(),
                 transforms.ToTensor(),
-                # transforms.Normalize((0.0,), (1.0,)),
             ]
         )
         dataset_name = self.config["dataset_name"]

@@ -1,6 +1,6 @@
 import torch
-from benchmark.reconnet.net import ReconNet
-from benchmark.scsnet.net import SCSNetInit, SCSNetDeep
+from src.benchmark.reconnet.net import ReconNet
+from src.benchmark.scsnet.net import SCSNetInit, SCSNetDeep
 
 
 def test_reconnet(sr, img_dim=32):
@@ -46,7 +46,8 @@ def test_scsnet(sr, img_dim=32, block_size=4):
     # Test 1 for y_input: Check shape
     y_input = torch.randn((batch_size, in_channels, num_blocks, num_blocks))
     out1 = net1(y_input)
-    assert out1.shape == (batch_size, img_dim, img_dim)
+    print(out1.shape)
+    assert out1.shape == (batch_size, 1, img_dim, img_dim)
 
     # Test 2 for y_input: Correct arrangement
     img_dim2 = 8
@@ -62,10 +63,7 @@ def test_scsnet(sr, img_dim=32, block_size=4):
     print(
         f"If {img_dim2}x{img_dim2} image and {block_size}x{block_size} block, then the output image = "
     )
-
     print(out2)
-    if out2.shape != (1, img_dim2, img_dim2):
-        raise Exception("The shape of `out2` is wrong.")
 
     # Check the shape of reconstructed image
     image_recon = net2(out1)

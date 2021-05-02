@@ -7,6 +7,7 @@ from pytorch_lightning.callbacks import (
     LearningRateMonitor,
 )
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.utilities.seed import seed_everything
 from data.data_module import PyTorchDatasetDataModule
 from .learner import ReconNetLearner
 
@@ -21,6 +22,7 @@ def load_config(config_path):
 
 
 def run():
+    seed_everything(seed=0)
     # main_config = load_config("../config/main_config.yaml")
     # config = load_config(f"../config/{main_config['config_filename']}")
     config = load_config("../config/reconnet_config.yaml")
@@ -32,8 +34,8 @@ def run():
         LearningRateMonitor(),
     ]
 
-    dataset_name = config['dataset_name']
-    sampling_ratio = config['sampling_ratio']
+    dataset_name = config["dataset_name"]
+    sampling_ratio = config["sampling_ratio"]
     log_name = f"reconnet_{dataset_name}_{int(sampling_ratio * 10000)}"
     logger = TensorBoardLogger(save_dir="../logs", name=log_name)
 

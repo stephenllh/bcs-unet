@@ -8,25 +8,36 @@ import torchvision
 
 
 class BSDS500Dataset:
-    def __init__(self, bcs: bool, mode: str, tfms=None):
+    def __init__(
+        self, sampling_ratio: float, bcs: bool, train_val_test: str, tfms=None
+    ):
         self.bcs = bcs  # TODO: add the bcs and ccs functionality
-        self.data_dir = "../input/BSDS500"
-        self.filelist = [
-            filename
-            for filename in os.listdir(self.data_dir)
-            if filename[-4:] == ".jpg"
+        self.path = "../input/BSDS500/" + train_val_test
+        self.filenames = [
+            filename for filename in os.listdir(self.path) if filename[-4:] == ".jpg"
         ]
         self.tfms = tfms
+        if bcs:
+            phi = np.load("../input/phi_block_binary.npy")
+            phi = phi[: int(sampling_ratio * 16)]
+            phi = torch.FloatTensor(phi)
+            self.cs_operator = BCSOperator(phi)
+        else:  # TODO: prepare for CCS
+            pass
+            # phi = np.load("../input/________.npy")  # TODO: make the CCS phi format correct
+            # self.cs_operator = CCSOperator(phi)
 
     def __getitem__(self, idx):
-        image = cv2.imread(os.path.join(self.path, self.filelist[idx]))
+        image = cv2.imread(os.path.join(self.path, self.filenames[idx]))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
         if self.tfms is not None:
             augmented = self.tfms(image=image)
             image = augmented["image"]
+        print(image.max())
+        image_ = image.unsqueeze(dim=1)
+        y = self.cs_operator(image_)
 
-        return image
+        return y.squeeze(dim=0), image
 
     def __len__(self):
         return len(self.filelist)

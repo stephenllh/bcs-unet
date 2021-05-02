@@ -145,6 +145,8 @@ cython_debug/
 **/.vscode
 **/__pycache__
 **/inference_input
+**/wandb
+**/log
 
 # Data files
 *.csv
