@@ -141,7 +141,10 @@ cython_debug/
 **/checkpoint
 **/logs
 **/lightning_logs
-**/input
+
+**/input/**
+!/input/phi_block_binary.npy
+
 **/.vscode
 **/__pycache__
 **/inference_input
@@ -156,3 +159,5 @@ cython_debug/
 *.bin
 *.pyc
 *.png
+
+# Include this
