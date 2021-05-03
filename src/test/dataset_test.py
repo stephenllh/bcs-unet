@@ -21,5 +21,5 @@ def BSDS500_test():
 
 
 if __name__ == "__main__":
-    # dataset_test()
-    BSDS500_test()
+    pytorch_dataset_test()
+    # BSDS500_test()

@@ -2,7 +2,7 @@
 sampling_ratio: 0.125
 # y_shape: 128
 img_dim: 32
-dataset_name: "svhn"
+dataset_name: "stl10"
 bcs: True
 
 data_module:

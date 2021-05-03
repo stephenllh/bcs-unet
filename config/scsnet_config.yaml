@@ -3,7 +3,7 @@ sampling_ratio: 0.125
 in_channels: 2
 # y_shape: 128
 img_dim: 32
-dataset_name: "svhn"
+dataset_name: "stl10"
 bcs: True
 
 data_module:
@@ -15,7 +15,7 @@ data_module:
 learner:
   criterion: "L1" 
   metrics: ["psnr", "ssim"]  
-  lr: 0.001
+  lr: 0.0003
   weight_decay: 0.01
   scheduler:
     type: "reduce_lr_on_plateau"  # or "one_cycle"

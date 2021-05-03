@@ -1,12 +1,11 @@
 import torch
-import pandas as pd
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchvision import transforms
 import albumentations as alb
 from albumentations.pytorch.transforms import ToTensorV2
 import pytorch_lightning as pl
-from data.dataset import MNISTDataset, SVHNDataset, BSDS500Dataset
+from data.dataset import MNISTDataset, SVHNDataset, BSDS500Dataset, STL10Dataset
 
 
 class BSDS500DataModule(pl.LightningDataModule):
@@ -18,7 +17,7 @@ class BSDS500DataModule(pl.LightningDataModule):
     def setup(self, stage=None):
         train_tfms = alb.Compose(
             [
-                alb.CenterCrop(256, 256),
+                # alb.CenterCrop(256, 256),
                 alb.HorizontalFlip(p=0.5),
                 alb.ColorJitter(brightness=0.2, contrast=0.2),
                 alb.Normalize(mean=(0,), std=(1,)),
@@ -27,7 +26,7 @@ class BSDS500DataModule(pl.LightningDataModule):
         )
         val_tfms = alb.Compose(
             [
-                alb.CenterCrop(256, 256),
+                # alb.CenterCrop(256, 256),
                 alb.Normalize(mean=(0,), std=(1,)),
                 ToTensorV2(),
             ]
@@ -48,13 +47,13 @@ class BSDS500DataModule(pl.LightningDataModule):
         )
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size)
+        return DataLoader(self.train_dataset, batch_size=self.dm_config["batch_size"])
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size)
+        return DataLoader(self.val_dataset, batch_size=self.dm_config["batch_size"])
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size)
+        return DataLoader(self.test_dataset, batch_size=self.dm_config["batch_size"])
 
 
 class PyTorchDatasetDataModule(pl.LightningDataModule):
@@ -66,9 +65,15 @@ class PyTorchDatasetDataModule(pl.LightningDataModule):
         self.dm_config = config["data_module"]
 
     def setup(self, stage=None):
+        dataset_name = self.config["dataset_name"]
+        if dataset_name in ["mnist", "svhn"]:
+            image_size = 32
+        else:
+            image_size = 96
+
         train_tfms = transforms.Compose(
             [
-                transforms.Resize(32),
+                transforms.Resize(image_size),
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.ColorJitter(brightness=0.2, contrast=0.2),
                 transforms.Grayscale(),
@@ -77,18 +82,18 @@ class PyTorchDatasetDataModule(pl.LightningDataModule):
         )
         val_tfms = transforms.Compose(
             [
-                transforms.Resize(32),
+                transforms.Resize(image_size),
                 transforms.Grayscale(),
                 transforms.ToTensor(),
             ]
         )
-        dataset_name = self.config["dataset_name"]
+
         if dataset_name == "mnist":
             Dataset = MNISTDataset
-        # elif dataset_name == "fmnist":
-        #     Dataset = FMNISTDataset
         elif dataset_name == "svhn":
             Dataset = SVHNDataset
+        elif dataset_name == "stl10":
+            Dataset = STL10Dataset
 
         self.train_dataset = Dataset(
             sampling_ratio=self.config["sampling_ratio"],
@@ -112,7 +117,6 @@ class PyTorchDatasetDataModule(pl.LightningDataModule):
         )
 
         dataset_size = len(self.train_dataset)
-        torch.manual_seed(0)
         indices = torch.randperm(dataset_size)
         split = int(self.dm_config["val_percent"] * dataset_size)
         self.train_idx, self.valid_idx = indices[split:], indices[:split]

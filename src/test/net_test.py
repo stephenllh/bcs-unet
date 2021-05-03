@@ -1,6 +1,6 @@
 import torch
-from src.benchmark.reconnet.net import ReconNet
-from src.benchmark.scsnet.net import SCSNetInit, SCSNetDeep
+from benchmark.reconnet.net import ReconNet
+from benchmark.scsnet.net import SCSNetInit, SCSNetDeep
 
 
 def test_reconnet(sr, img_dim=32):
@@ -79,7 +79,7 @@ def test_scsnet(sr, img_dim=32, block_size=4):
 
 def test_all():
     # test_reconnet(0.125)
-    test_scsnet(sr=0.125)
+    test_scsnet(sr=0.125, img_dim=96)
 
 
 if __name__ == "__main__":

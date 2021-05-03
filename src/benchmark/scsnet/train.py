@@ -7,7 +7,7 @@ from pytorch_lightning.callbacks import (
     LearningRateMonitor,
 )
 from pytorch_lightning.loggers import TensorBoardLogger
-from data.data_module import PyTorchDatasetDataModule
+from data.data_module import PyTorchDatasetDataModule, BSDS500DataModule
 from .learner import SCSNetLearner
 
 
@@ -24,7 +24,10 @@ def run():
     # main_config = load_config("../config/main_config.yaml")
     # config = load_config(f"../config/{main_config['config_filename']}")
     config = load_config("../config/scsnet_config.yaml")
-    data_module = PyTorchDatasetDataModule(config)
+    if config['dataset_name'] == "BSDS500":
+        data_module = BSDS500DataModule(config)
+    else:
+        data_module = PyTorchDatasetDataModule(config)
     learner = SCSNetLearner(config)
     callbacks = [
         ModelCheckpoint(**config["callbacks"]["checkpoint"]),
@@ -37,7 +40,7 @@ def run():
     )
     logger = TensorBoardLogger(save_dir="../logs", name=log_name)
 
-    message = f"Running SCSNet on {config['dataset_name']} dataset. Sampling ratio = {int(config['sampling_ratio'])}"
+    message = f"Running SCSNet on {config['dataset_name']} dataset. Sampling ratio = {config['sampling_ratio']}"
     print(message)
 
     trainer = pl.Trainer(

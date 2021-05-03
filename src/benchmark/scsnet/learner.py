@@ -45,7 +45,7 @@ class SCSNetLearner(pl.LightningModule):
                 if MetricClass is not None:
                     self.log(
                         f"{mode}_{metric_name}",
-                        MetricClass(preds2, targets),
+                        MetricClass(torch.tensor(preds2, dtype=torch.float32), targets),
                         prog_bar=True,
                     )
         return loss
