@@ -7,6 +7,7 @@ from pytorch_lightning.callbacks import (
     LearningRateMonitor,
 )
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.utilities.seed import seed_everything
 from data.data_module import PyTorchDatasetDataModule, BSDS500DataModule
 from .learner import SCSNetLearner
 
@@ -21,10 +22,11 @@ def load_config(config_path):
 
 
 def run():
+    seed_everything(seed=0)
     # main_config = load_config("../config/main_config.yaml")
     # config = load_config(f"../config/{main_config['config_filename']}")
     config = load_config("../config/scsnet_config.yaml")
-    if config['dataset_name'] == "BSDS500":
+    if config["dataset_name"] == "BSDS500":
         data_module = BSDS500DataModule(config)
     else:
         data_module = PyTorchDatasetDataModule(config)
@@ -47,7 +49,6 @@ def run():
         gpus=config["trainer"]["gpu"],
         max_epochs=config["trainer"]["epochs"],
         default_root_dir="../",
-        progress_bar_refresh_rate=20,
         callbacks=callbacks,
         precision=(16 if config["trainer"]["fp16"] else 32),
         logger=logger,

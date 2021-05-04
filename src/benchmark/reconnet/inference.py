@@ -2,17 +2,14 @@ import os
 from pathlib import Path
 import yaml
 import numpy as np
+import matplotlib.pyplot as plt
 import scipy.io
 import torch
-from torch.utils.data import DataLoader
-import pytorch_lightning as pl
-from data.data_module import PyTorchDatasetDataModule, MNISTDataset
-from .learner import ReconNetLearner
-from unit_test.inference_test import ShiftedMNISTDataset
 
-from torchvision import transforms
-import matplotlib.pyplot as plt
-from util import voltage2pixel, reshape_into_block
+# from torch.utils.data import DataLoader
+import pytorch_lightning as pl
+from data.data_module import PyTorchDatasetDataModule
+from .learner import ReconNetLearner
 
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -34,13 +31,11 @@ def setup():
         Path(checkpoint_path).parent.parent, "hparams.yaml"
     )
     train_config = load_config(train_config_path)
-    # print(train_config)
 
     data_module = PyTorchDatasetDataModule(train_config)
     learner = ReconNetLearner.load_from_checkpoint(
         checkpoint_path=inference_config["checkpoint_path"], config=train_config
     )
-    # print(data_module.test_dataset)
     trainer = pl.Trainer(
         gpus=inference_config["gpu"],
         logger=False,
@@ -56,53 +51,6 @@ def get_test_metrics(data_module, learner, trainer):
     return test_metrics
 
 
-def predict_test_set(data_module, learner, trainer):
-    tfms = transforms.Compose(
-        [
-            transforms.Resize(32),
-            transforms.Grayscale(),
-            transforms.ToTensor(),
-            # transforms.Normalize((0.0,), (1.0,)),
-        ]
-    )
-
-    test_dataset = MNISTDataset(
-        sampling_ratio=0.125,
-        bcs=True,
-        tfms=tfms,
-        train=False,
-    )
-    multiplier = 0.02
-    shift = -0.001
-    test_dataset2 = ShiftedMNISTDataset(
-        sampling_ratio=0.125,
-        bcs=True,
-        tfms=tfms,
-        train=False,
-        multiplier=multiplier,
-        shift=shift,
-    )
-    phi = np.load("../input/phi_block_binary.npy")
-    phi = phi[: int(0.125 * 16)]
-    phi = torch.FloatTensor(phi)
-    y_input = test_dataset2[0][0]  # make the hardcoded index 0 to be a variable.
-    y_input_converted = voltage2pixel(y_input, phi, low=shift, high=shift + multiplier)
-
-    # print(test_dataset[0][0].shape)
-    o = learner(y_input_converted.unsqueeze(0))
-
-    plt.imshow(o.squeeze().squeeze().cpu().detach().numpy(), cmap="gray")
-    # print(o.min(), o.max())
-    # print(test_dataset[0][1].min(), test_dataset[0][1].max())
-    # plt.imshow(test_dataset[0][1].squeeze(), cmap="gray")
-    plt.show()
-
-    # test_loader = DataLoader(test_dataset, batch_size=32)
-    # # predictions = trainer.predict(learner, test_loader)
-    # predictions = trainer.predict(learner, datamodule=data_module)
-    # return predictions
-
-
 class RealDataset:
     def __init__(self, inference_config):
         self.real_data = inference_config["real_data"]
@@ -114,21 +62,15 @@ class RealDataset:
         path = os.path.join("../inference_input", real_data["filename"])
         y_input = scipy.io.loadmat(path)["y"]
 
-        # y_input = reshape_into_block(y_input, sr=0.125)  # TODO: clarify that format of y_input is: vector; during sampling it's channel first, width second, then height.
-
         y_input = torch.FloatTensor(y_input).permute(1, 0)
         y_input -= y_input.min()
         y_input /= real_data["max"]
 
-        # Permute is necessary because during sampling,
-        # each block region is sampled with k block measurement matrices before moving on to the next (channel-first).
-        # Hence, we need to permute it to become channel-first to match PyTorch format
+        # Permute is necessary because during sampling, we used "channel-last" format.
+        # Hence, we need to permute it to become channel-first to match PyTorch "channel-first" format
         y_input = y_input.view(-1, self.c)
         y_input = y_input.permute(1, 0).contiguous()
         y_input = y_input.view(1, -1)
-
-        # y_input = voltage2pixel(y_input, self.phi, real_data["min"], real_data["max"])
-        # print(y_input.shape)
         return y_input
 
     def __len__(self):
@@ -147,7 +89,7 @@ def deploy(learner):
     # print("rdshape", real_dataset[0].shape)
     # print(real_dataset[0].max(), real_dataset[0].min())
     # inference_loader = DataLoader(real_dataset, batch_size=32)
-    predictions = learner(real_dataset[1].unsqueeze(0))
+    predictions = learner(real_dataset[0].unsqueeze(0))
     plt.imshow(predictions.squeeze().squeeze().cpu().detach().numpy(), cmap="gray")
     plt.axis("off")
     plt.show()

@@ -41,7 +41,7 @@ class BCSNet(pl.LightningModule):
                 if Metric is not None:
                     self.log(
                         f"{mode}_{metric_name}",
-                        Metric(preds.argmax(axis=-1), targets),
+                        Metric(preds, targets),
                         prog_bar=True,
                     )
         return loss
@@ -56,4 +56,4 @@ class BCSNet(pl.LightningModule):
         """Set Pytorch Lightning Metrics as attributes."""
         for metric_name in config["learner"]["metrics"]:
             self.__setattr__(f"train_{metric_name}", get_metrics(metric_name, config))
-            self.__setattr__(f"valid_{metric_name}", get_metrics(metric_name, config))
+            self.__setattr__(f"val_{metric_name}", get_metrics(metric_name, config))

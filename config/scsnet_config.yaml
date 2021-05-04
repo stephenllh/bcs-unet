@@ -21,7 +21,7 @@ learner:
     type: "reduce_lr_on_plateau"  # or "one_cycle"
     args_reduce_lr_on_plateau:
       factor: 0.3
-      patience: 5
+      patience: 2
       verbose: True
     arg_one_cycle:
       pct_start: 0.3
@@ -33,7 +33,7 @@ callbacks:
     save_last: True
   early_stopping:
     monitor: "val_loss"
-    patience: 10
+    patience: 5
 
 trainer:
   epochs: 100

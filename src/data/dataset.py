@@ -13,9 +13,7 @@ class BSDS500Dataset:
     ):
         self.bcs = bcs  # TODO: add the bcs and ccs functionality
         self.path = "../input/BSDS500_crop32/" + train_val_test
-        self.filenames = [
-            filename for filename in os.listdir(self.path)
-        ]
+        self.filenames = [filename for filename in os.listdir(self.path)]
         self.tfms = tfms
         if bcs:
             phi = np.load("../input/phi_block_binary.npy")
@@ -61,9 +59,9 @@ class PyTorchBaseDataset:
 class STL10Dataset(PyTorchBaseDataset):
     def __init__(self, sampling_ratio: float, bcs: bool, tfms=None, train=True):
         super().__init__(sampling_ratio=sampling_ratio, bcs=bcs)
-        self.data = torchvision.datasets.SVHN(
+        self.data = torchvision.datasets.STL10(
             "../input/STL10",
-            split="train" if train else "test",
+            split="unlabeled" if train else "test",
             transform=tfms,
             download=True,
         )
