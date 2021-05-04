@@ -138,18 +138,15 @@ dmypy.json
 cython_debug/
 
 # Input data and models
-**/checkpoint
 **/logs
 **/lightning_logs
-
-**/input/**
-!/input/phi_block_binary.npy
-
+**/saved_models
 **/.vscode
 **/__pycache__
 **/inference_input
 **/wandb
-**/log
+**/input/**
+!/input/phi_block_binary.npy
 
 # Data files
 *.csv
