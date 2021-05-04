@@ -1,4 +1,5 @@
 ---
+model: "reconnet"
 sampling_ratio: 0.125
 in_channels: 2
 # y_shape: 128
