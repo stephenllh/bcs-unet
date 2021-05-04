@@ -2,7 +2,7 @@ from torch import nn
 from .utils import init_weights
 
 
-class BCSNet(nn.Module):
+class BCSUNet(nn.Module):
     """Combines simple residual upsample model and U-Net model"""
 
     def __init__(self, cs_model, up_model, unet_model, loss_type, init_type, **kwargs):
