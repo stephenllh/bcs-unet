@@ -137,16 +137,19 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# Input data and models
-**/logs
-**/lightning_logs
-**/saved_models
+# VSCode
 **/.vscode
 **/__pycache__
-**/inference_input
-**/wandb
+
+# Input data and models
 **/input/**
 !/input/phi_block_binary.npy
+**/logs
+**/lightning_logs
+**/inference_input
+**/inference_images
+**/wandb
+**/saved_models
 
 # Data files
 *.csv
@@ -156,5 +159,4 @@ cython_debug/
 *.bin
 *.pyc
 *.png
-
-# Include this
+*.ckpt
