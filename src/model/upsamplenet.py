@@ -1,20 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from model.utils import get_norm_layer
 from model.layers import SNConv2d
-
-
-class LearnableCompressiveSensingNet(nn.Module):
-    def __init__(self, sampling_ratio, kernel_size):
-        super().__init__()
-        first_out_channels = int(sampling_ratio * kernel_size ** 2)
-        self.measurement = nn.Conv2d(
-            1, first_out_channels, kernel_size, stride=kernel_size, bias=False
-        )
-
-    def forward(self, x):
-        return self.measurement(x)
 
 
 class UpResBlock(nn.Module):
@@ -58,8 +45,8 @@ class UpResBlock(nn.Module):
                 bias=False,
             )
 
-        else:  # if transpose conv is not used. Whether or not it upsamples (see upsample == True/False),
-            # it is done in `_residual_block` method
+        else:  # if transpose conv is not used.
+            # The `_residual_block` method will decide whether or not it upsamples depending on `upsample == True/False`
             conv = SNConv2d if spectral_norm else nn.Conv2d
             self.conv1 = conv(
                 in_channels,
@@ -78,9 +65,8 @@ class UpResBlock(nn.Module):
                 bias=False,
             )
 
-        norm = get_norm_layer(norm_type)
-        self.bn1 = norm(middle_channels)
-        self.bn2 = norm(out_channels)
+        self.bn1 = nn.BatchNorm2d(middle_channels)
+        self.bn2 = nn.BatchNorm2d(out_channels)
 
         self.relu = nn.ReLU(inplace=True)
 
@@ -111,40 +97,30 @@ class UpResBlock(nn.Module):
         return self._residual_block(x) + self._shortcut(x)
 
 
-class Decoder(nn.Module):
-    """The decoder of the whole architecture. It uses UpResBlock"""
-
-    def __init__(
-        self,
-        sampling_ratio,
-        kernel_size=4,
-        channels_list=(16, 8),
-        transpose_conv=False,
-        learnable_sc=True,
-        spectral_norm=True,
-    ):
+class UpsampleNet(nn.Module):
+    def __init__(self, sampling_ratio, config):
         super().__init__()
-
+        kernel_size = 4
         first_out_channels = int(sampling_ratio * kernel_size ** 2)
 
         self.up1 = UpResBlock(
             in_channels=first_out_channels,
-            out_channels=channels_list[0],
+            out_channels=config["channels_list"][0],
             middle_channels=None,
             upsample=True,
-            use_transpose_conv=False,
-            learnable_sc=True,
-            spectral_norm=True,
+            use_transpose_conv=config["use_transpose_conv"],
+            learnable_sc=config["learnable_sc"],
+            spectral_norm=config["spectral_norm"],
         )
 
         self.up2 = UpResBlock(
-            in_channels=channels_list[0],
-            out_channels=channels_list[1],
+            in_channels=config["channels_list"][0],
+            out_channels=config["channels_list"][1],
             middle_channels=None,
             upsample=True,
-            use_transpose_conv=False,
-            learnable_sc=True,
-            spectral_norm=True,
+            use_transpose_conv=config["use_transpose_conv"],
+            learnable_sc=config["learnable_sc"],
+            spectral_norm=config["spectral_norm"],
         )
 
     def forward(self, x):

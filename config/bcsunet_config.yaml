@@ -1,0 +1,52 @@
+---
+model: "BCS-UNet"
+sampling_ratio: 0.125
+dataset_name: "stl10"
+bcs: True
+
+data_module:
+  data_dir: "../input"
+  batch_size: 128
+  val_percent: 0.1
+  sampling_ratio: 0.125
+
+net:
+  upsamplenet:
+    init_type: "xavier"
+    channels_list: (16, 8)
+    transpose_conv: False
+    learnable_sc: True
+    spectral_norm: True
+  unet:
+    init_type: "xavier"
+    channels: 32
+    use_dropout: False
+
+learner:
+  intermediate_image: True
+  criterion: "L1" 
+  metrics: ["psnr", "ssim"]  
+  lr: 0.0003
+  weight_decay: 0.01
+  scheduler:
+    type: "reduce_lr_on_plateau"  # or "one_cycle"
+    args_reduce_lr_on_plateau:
+      factor: 0.3
+      patience: 2
+      verbose: True
+    arg_one_cycle:
+      pct_start: 0.3
+      verbose: True
+
+callbacks:
+  checkpoint:
+    monitor: "val_loss"
+    save_last: True
+  early_stopping:
+    monitor: "val_loss"
+    patience: 5
+
+trainer:
+  epochs: 100
+  gpu: 1
+  fp16: True

@@ -1,53 +1,63 @@
 import os
-import yaml
+import argparse
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.callbacks import LearningRateMonitor
-from data.data_module import ImagenetteDataModule
-from data.transforms import get_transforms
-from model.nets import SimpleNet
-from engine.learner import ImagenetteClassifier
-
+from pytorch_lightning.callbacks import (
+    ModelCheckpoint,
+    EarlyStopping,
+    LearningRateMonitor,
+)
+from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.utilities.seed import seed_everything
+from data.data_module import EMNISTDataModule, SVHNDataModule, STL10DataModule
+from .learner import SCSNetLearner
+from utils import load_config
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-
-def load_config(config_path):
-    with open(os.path.join(config_path)) as file:
-        config = yaml.safe_load(file)
-    return config
+parser = argparse.ArgumentParser(description="Wheat detection with EfficientDet")
+parser.add_argument("-d", "--dataset", type=str, help="'emnist', 'svhn', or 'stl10'")
+args = parser.parse_args()
 
 
 def run():
-    config = load_config("../config/config.yaml")
+    seed_everything(seed=0)
 
-    # TODO: transforms
-    data = ImagenetteDataModule(
-        **config["data_module"],
-        train_transforms=get_transforms(config["transforms"], is_train=True),
-        test_transforms=get_transforms(config["transforms"], is_train=False),
-    )
+    config = load_config("../config/bcsunet_config.yaml")
 
-    # TODO: configure net with config
-    simplenet = SimpleNet()
-    learner = ImagenetteClassifier(simplenet, config)
+    if args.dataset == "EMNIST":
+        data_module = EMNISTDataModule(config)
+    elif args.dataset == "SVHN":
+        data_module = SVHNDataModule(config)
+    elif args.dataset == "STL10":
+        data_module = STL10DataModule(config)
 
+    learner = SCSNetLearner(config)
     callbacks = [
         ModelCheckpoint(**config["callbacks"]["checkpoint"]),
         EarlyStopping(**config["callbacks"]["early_stopping"]),
         LearningRateMonitor(),
     ]
 
-    # Initialize a trainer
+    log_name = (
+        f"BCSUNet_{config['dataset_name']}_{int(config['sampling_ratio'] * 10000)}"
+    )
+    logger = TensorBoardLogger(save_dir="../logs", name=log_name)
+
+    message = f"Running SCSNet on {config['dataset_name']} dataset. Sampling ratio = {config['sampling_ratio']}"
+    print("-" * 100)
+    print(message)
+    print("-" * 100)
+
     trainer = pl.Trainer(
         gpus=config["trainer"]["gpu"],
         max_epochs=config["trainer"]["epochs"],
         default_root_dir="../",
-        progress_bar_refresh_rate=20,
         callbacks=callbacks,
+        precision=(16 if config["trainer"]["fp16"] else 32),
+        logger=logger,
     )
-    trainer.fit(learner, data)
+    trainer.fit(learner, data_module)
+    trainer.test(learner, data_module)
 
 
 if __name__ == "__main__":

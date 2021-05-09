@@ -3,15 +3,13 @@ import torch
 from torch import nn
 
 
-class Unet(nn.Module):
+class UNet(nn.Module):
     def __init__(
         self,
-        input_nc,
-        output_nc,
-        num_downs,
-        channels=64,
-        norm_layer=nn.BatchNorm2d,
-        use_dropout=False,
+        config,
+        input_nc=8,
+        output_nc=1,
+        num_downs=5,
     ):
         """
         Construct a Unet generator
@@ -20,18 +18,18 @@ class Unet(nn.Module):
             output_nc (int) -- the number of channels in output images
             num_downs (int) -- the number of downsamplings in UNet. For example, # if |num_downs| == 7,
                                 image of size 128x128 will become of size 1x1 # at the bottleneck
-            ngf (int)       -- the number of filters in the last conv layer
-            norm_layer      -- normalization layer
+            channels (int)  -- the number of filters in the last conv layer
         We construct the U-Net from the innermost layer to the outermost layer.
         It is a recursive process.
         """
         super().__init__()
+        channels = config["channels"]
         unet_block = UnetSkipConnectionBlock(
             channels * 8,
             channels * 8,
             input_nc=None,
             submodule=None,
-            norm_layer=norm_layer,
+            norm_layer=nn.BatchNorm2d,
             innermost=True,
         )  # add the innermost layer first
 
@@ -42,8 +40,8 @@ class Unet(nn.Module):
                 channels * 8,
                 input_nc=None,
                 submodule=unet_block,
-                norm_layer=norm_layer,
-                use_dropout=use_dropout,
+                norm_layer=nn.BatchNorm2d,
+                use_dropout=config["use_dropout"],
             )
 
         # Gradually reduce the number of filters from `channels*8` to `channels`
@@ -52,21 +50,21 @@ class Unet(nn.Module):
             channels * 8,
             input_nc=None,
             submodule=unet_block,
-            norm_layer=norm_layer,
+            norm_layer=nn.BatchNorm2d,
         )
         unet_block = UnetSkipConnectionBlock(
             channels * 2,
             channels * 4,
             input_nc=None,
             submodule=unet_block,
-            norm_layer=norm_layer,
+            norm_layer=nn.BatchNorm2d,
         )
         unet_block = UnetSkipConnectionBlock(
             channels,
             channels * 2,
             input_nc=None,
             submodule=unet_block,
-            norm_layer=norm_layer,
+            norm_layer=nn.BatchNorm2d,
         )
 
         self.model = UnetSkipConnectionBlock(
@@ -75,7 +73,7 @@ class Unet(nn.Module):
             input_nc=input_nc,
             submodule=unet_block,
             outermost=True,
-            norm_layer=norm_layer,
+            norm_layer=nn.BatchNorm2d,
         )  # add the outermost layer
 
     def forward(self, input):
@@ -171,6 +169,4 @@ class UnetSkipConnectionBlock(nn.Module):
         if self.outermost:
             return self.model(x)
         else:  # add skip connections
-            return torch.cat(
-                [x, self.model(x)], dim=1
-            )  # TODO: add learnable skip connections
+            return torch.cat([x, self.model(x)], dim=1)

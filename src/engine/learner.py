@@ -1,25 +1,25 @@
 import torch
 import pytorch_lightning as pl
+from net import BCSUNet
 from engine.dispatcher import get_scheduler, get_criterion, get_metrics
 
 
-class BCSNet(pl.LightningModule):
-    def __init__(self, net, config=None):
+class SCSNetLearner(pl.LightningModule):
+    def __init__(self, config):
         super().__init__()
-        self.net = net
-        self.config = config
+        self.net = BCSUNet(config["net"])
+        self.hparams = self.config = config
         self.criterion = get_criterion(config)
         self._set_metrics(config)
 
     def forward(self, inputs):
-        return self.net(inputs)
+        _, reconstructed_image = self.net(inputs)
+        return reconstructed_image
 
     def configure_optimizers(self):
-        trainable_params = filter(lambda p: p.requires_grad, self.net.parameters())
-        optimizer = torch.optim.AdamW(
-            trainable_params,
+        optimizer = torch.optim.Adam(
+            self.parameters(),
             lr=self.config["learner"]["lr"],
-            weight_decay=self.config["learner"]["weight_decay"],
         )
         scheduler = get_scheduler(optimizer, self.config)
         return {
@@ -29,19 +29,24 @@ class BCSNet(pl.LightningModule):
         }
 
     def step(self, batch, mode="train"):
-        images, targets = batch
-        preds = self.net(images)
-        loss = self.criterion(preds, targets)
-
+        inputs, targets = batch
+        preds1, preds2 = self.net(inputs)
+        if self.config["learner"]["intermediate_image"]:
+            loss1 = self.criterion(preds1, targets)
+            loss2 = self.criterion(preds2, targets)
+            loss = loss1 + loss2
+        else:
+            loss = self.criterion(preds2, targets)
         self.log(f"{mode}_loss", loss, prog_bar=False)
 
         if mode == "val":
+            preds_ = preds2.float().detach()
             for metric_name in self.config["learner"]["metrics"]:
-                Metric = self.__getattr__(f"{mode}_{metric_name}", None)
-                if Metric is not None:
+                MetricClass = self.__getattr__(f"{mode}_{metric_name}")
+                if MetricClass is not None:
                     self.log(
                         f"{mode}_{metric_name}",
-                        Metric(preds, targets),
+                        MetricClass(preds_, targets),
                         prog_bar=True,
                     )
         return loss

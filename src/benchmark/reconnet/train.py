@@ -1,5 +1,5 @@
 import os
-import yaml
+import argparse
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import (
     ModelCheckpoint,
@@ -8,25 +8,29 @@ from pytorch_lightning.callbacks import (
 )
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.utilities.seed import seed_everything
-from data.data_module import PyTorchDatasetDataModule
+from data.data_module import EMNISTDataModule, SVHNDataModule, STL10DataModule
 from .learner import ReconNetLearner
-
+from utils import load_config
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-
-def load_config(config_path):
-    with open(os.path.join(config_path)) as file:
-        config = yaml.safe_load(file)
-    return config
+parser = argparse.ArgumentParser(description="Wheat detection with EfficientDet")
+parser.add_argument("-d", "--dataset", type=str, help="'emnist', 'svhn', or 'stl10'")
+args = parser.parse_args()
 
 
 def run():
     seed_everything(seed=0)
-    # main_config = load_config("../config/main_config.yaml")
-    # config = load_config(f"../config/{main_config['config_filename']}")
+
     config = load_config("../config/reconnet_config.yaml")
-    data_module = PyTorchDatasetDataModule(config)
+
+    if args.dataset == "EMNIST":
+        data_module = EMNISTDataModule(config)
+    elif args.dataset == "SVHN":
+        data_module = SVHNDataModule(config)
+    elif args.dataset == "STL10":
+        data_module = STL10DataModule(config)
+
     learner = ReconNetLearner(config)
     callbacks = [
         ModelCheckpoint(**config["callbacks"]["checkpoint"]),
@@ -34,12 +38,11 @@ def run():
         LearningRateMonitor(),
     ]
 
-    dataset_name = config["dataset_name"]
     sampling_ratio = config["sampling_ratio"]
-    log_name = f"reconnet_{dataset_name}_{int(sampling_ratio * 10000)}"
+    log_name = f"ReconNet_{args.dataset}_{int(sampling_ratio * 10000)}"
     logger = TensorBoardLogger(save_dir="../logs", name=log_name)
 
-    message = f"Running ReconNet on {dataset_name} dataset. Sampling ratio = {sampling_ratio * 100}%"
+    message = f"Running ReconNet on {args.dataset} dataset. Sampling ratio = {sampling_ratio * 100}%"
     print("-" * 100)
     print(message)
     print("-" * 100)
@@ -54,6 +57,7 @@ def run():
         logger=logger,
     )
     trainer.fit(learner, data_module)
+    trainer.test(learner, data_module)
 
 
 if __name__ == "__main__":

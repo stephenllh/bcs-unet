@@ -1,62 +1,33 @@
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
+import torchvision
 from torchvision import transforms
-import albumentations as alb
-from albumentations.pytorch.transforms import ToTensorV2
 import pytorch_lightning as pl
-from data.dataset import MNISTDataset, SVHNDataset, BSDS500Dataset, STL10Dataset
+from .base_dataset import BaseDataset
 
 
-class BSDS500DataModule(pl.LightningDataModule):
-    def __init__(self, config):
-        super().__init__()
-        self.config = config
-        self.dm_config = config["data_module"]
-
-    def setup(self, stage=None):
-        train_tfms = alb.Compose(
-            [
-                # alb.CenterCrop(256, 256),
-                alb.HorizontalFlip(p=0.5),
-                alb.ColorJitter(brightness=0.2, contrast=0.2),
-                alb.Normalize(mean=(0,), std=(1,)),
-                ToTensorV2(),
-            ]
-        )
-        val_tfms = alb.Compose(
-            [
-                # alb.CenterCrop(256, 256),
-                alb.Normalize(mean=(0,), std=(1,)),
-                ToTensorV2(),
-            ]
+class SVHNDataset(BaseDataset):
+    def __init__(self, sampling_ratio: float, bcs: bool, tfms=None, train=True):
+        super().__init__(sampling_ratio=sampling_ratio, bcs=bcs)
+        self.data = torchvision.datasets.SVHN(
+            "../input/SVHN",
+            split="train" if train else "test",
+            transform=tfms,
+            download=True,
         )
 
-        self.train_dataset = BSDS500Dataset(
-            sampling_ratio=self.dm_config["sampling_ratio"],
-            bcs=self.config["bcs"],
-            train_val_test="train",
-            tfms=train_tfms,
-        )
+    def __getitem__(self, idx):
+        image, _ = self.data[idx]
+        image_ = image.unsqueeze(dim=1)
+        y = self.cs_operator(image_)
+        return y.squeeze(dim=0), image
 
-        self.val_dataset = BSDS500Dataset(
-            sampling_ratio=self.dm_config["sampling_ratio"],
-            bcs=self.config["bcs"],
-            train_val_test="val",
-            tfms=val_tfms,
-        )
-
-    def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.dm_config["batch_size"])
-
-    def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.dm_config["batch_size"])
-
-    def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.dm_config["batch_size"])
+    def __len__(self):
+        return len(self.data)
 
 
-class PyTorchDatasetDataModule(pl.LightningDataModule):
+class SVHNDataModule(pl.LightningDataModule):
     """Pytorch Lightning Data Module for PyTorch datasets, e.g. MNIST, FMNIST, SVHN, etc."""
 
     def __init__(self, config):
@@ -65,15 +36,9 @@ class PyTorchDatasetDataModule(pl.LightningDataModule):
         self.dm_config = config["data_module"]
 
     def setup(self, stage=None):
-        dataset_name = self.config["dataset_name"]
-        if dataset_name in ["mnist", "svhn"]:
-            image_size = 32
-        else:
-            image_size = 96
-
         train_tfms = transforms.Compose(
             [
-                transforms.Resize(image_size),
+                transforms.Resize(32),
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.ColorJitter(brightness=0.2, contrast=0.2),
                 transforms.Grayscale(),
@@ -82,34 +47,27 @@ class PyTorchDatasetDataModule(pl.LightningDataModule):
         )
         val_tfms = transforms.Compose(
             [
-                transforms.Resize(image_size),
+                transforms.Resize(32),
                 transforms.Grayscale(),
                 transforms.ToTensor(),
             ]
         )
 
-        if dataset_name == "mnist":
-            Dataset = MNISTDataset
-        elif dataset_name == "svhn":
-            Dataset = SVHNDataset
-        elif dataset_name == "stl10":
-            Dataset = STL10Dataset
-
-        self.train_dataset = Dataset(
+        self.train_dataset = SVHNDataset(
             sampling_ratio=self.config["sampling_ratio"],
             bcs=self.config["bcs"],
             tfms=train_tfms,
             train=True,
         )
 
-        self.val_dataset = Dataset(
+        self.val_dataset = SVHNDataset(
             sampling_ratio=self.config["sampling_ratio"],
             bcs=self.config["bcs"],
             tfms=val_tfms,
             train=True,
         )
 
-        self.test_dataset = Dataset(
+        self.test_dataset = SVHNDataset(
             sampling_ratio=self.config["sampling_ratio"],
             bcs=self.config["bcs"],
             tfms=val_tfms,
