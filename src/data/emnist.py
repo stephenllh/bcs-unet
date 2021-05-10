@@ -12,6 +12,7 @@ class EMNISTDataset(BaseDataset):
         super().__init__(sampling_ratio=sampling_ratio, bcs=bcs)
         self.data = torchvision.datasets.EMNIST(
             "../input",
+            split="letters",  # we use letters only
             train=train,
             transform=tfms,
             download=True,

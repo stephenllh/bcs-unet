@@ -9,7 +9,10 @@ class ReconNetLearner(pl.LightningModule):
         super().__init__()
         y_dim = int(config["sampling_ratio"] * config["img_dim"] ** 2)
         self.net = ReconNet(y_dim, config["img_dim"])
-        self.hparams = config
+        self.save_hyperparameters(config)
+        self.config = config
+        # hparams = config
+        # self.hparams = hparams
         self.criterion = get_criterion(config)
         self._set_metrics(config)
 
@@ -20,9 +23,9 @@ class ReconNetLearner(pl.LightningModule):
         trainable_params = filter(lambda p: p.requires_grad, self.net.parameters())
         optimizer = torch.optim.Adam(
             trainable_params,
-            lr=self.hparams["learner"]["lr"],
+            lr=self.config["learner"]["lr"],
         )
-        scheduler = get_scheduler(optimizer, self.hparams)
+        scheduler = get_scheduler(optimizer, self.config)
         return {
             "optimizer": optimizer,
             "lr_scheduler": scheduler,
@@ -35,15 +38,16 @@ class ReconNetLearner(pl.LightningModule):
         loss = self.criterion(preds, targets)
 
         self.log(f"{mode}_loss", loss, prog_bar=True)
+        preds_ = preds.float().detach().cpu()
+        targets_ = targets.detach().cpu()
 
         # Log validation metrics
         if mode == "val":
-            for metric_name in self.hparams["learner"]["metrics"]:
+            for metric_name in self.config["learner"]["metrics"]:
                 metric = self.__getattr__(f"{mode}_{metric_name}")
-                # TODO for future projects: handle preds.argmax()
                 self.log(
                     f"{mode}_{metric_name}",
-                    metric(preds, targets),
+                    metric(preds_, targets_),
                     prog_bar=True,
                 )
         return loss
@@ -57,13 +61,13 @@ class ReconNetLearner(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         inputs, targets = batch
         preds = self.net(inputs)
-        for metric_name in self.hparams["learner"]["metrics"]:
+        for metric_name in self.config["learner"]["metrics"]:
             metric = self.__getattr__(f"test_{metric_name}")
             _ = metric(preds, targets)
 
     def test_epoch_end(self, outputs):
         metrics_dict = {}
-        for metric_name in self.hparams["learner"]["metrics"]:
+        for metric_name in self.config["learner"]["metrics"]:
             metric = self.__getattr__(f"test_{metric_name}")
             test_metric = metric.compute()
             metrics_dict.update({metric_name: test_metric})

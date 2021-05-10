@@ -8,7 +8,9 @@ from pytorch_lightning.callbacks import (
 )
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.utilities.seed import seed_everything
-from data.data_module import EMNISTDataModule, SVHNDataModule, STL10DataModule
+from data.emnist import EMNISTDataModule
+from data.svhn import SVHNDataModule
+from data.stl10 import STL10DataModule
 from .learner import SCSNetLearner
 from utils import load_config
 
@@ -20,7 +22,7 @@ args = parser.parse_args()
 
 
 def run():
-    seed_everything(seed=0)
+    seed_everything(seed=0, workers=True)
 
     config = load_config("../config/bcsunet_config.yaml")
 
@@ -50,14 +52,15 @@ def run():
 
     trainer = pl.Trainer(
         gpus=config["trainer"]["gpu"],
-        max_epochs=config["trainer"]["epochs"],
+        max_epochs=1,
+        # max_epochs=config["trainer"]["epochs"],
         default_root_dir="../",
         callbacks=callbacks,
         precision=(16 if config["trainer"]["fp16"] else 32),
         logger=logger,
     )
     trainer.fit(learner, data_module)
-    trainer.test(learner, data_module)
+    trainer.test(learner, data_module, ckpt_path="best")
 
 
 if __name__ == "__main__":

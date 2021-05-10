@@ -8,7 +8,9 @@ from pytorch_lightning.callbacks import (
 )
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.utilities.seed import seed_everything
-from data.data_module import EMNISTDataModule, SVHNDataModule, STL10DataModule
+from data.emnist import EMNISTDataModule
+from data.svhn import SVHNDataModule
+from data.stl10 import STL10DataModule
 from .learner import ReconNetLearner
 from utils import load_config
 
@@ -20,7 +22,7 @@ args = parser.parse_args()
 
 
 def run():
-    seed_everything(seed=0)
+    seed_everything(seed=0, workers=True)
 
     config = load_config("../config/reconnet_config.yaml")
 
@@ -30,6 +32,8 @@ def run():
         data_module = SVHNDataModule(config)
     elif args.dataset == "STL10":
         data_module = STL10DataModule(config)
+    else:
+        raise NotImplementedError
 
     learner = ReconNetLearner(config)
     callbacks = [
@@ -49,12 +53,14 @@ def run():
 
     trainer = pl.Trainer(
         gpus=config["trainer"]["gpu"],
-        max_epochs=config["trainer"]["epochs"],
+        # max_epochs=config["trainer"]["epochs"],
+        max_epochs=1,
         default_root_dir="../",
         progress_bar_refresh_rate=20,
         callbacks=callbacks,
         precision=(16 if config["trainer"]["fp16"] else 32),
-        logger=logger,
+        logger=logger
+        # logger=None,
     )
     trainer.fit(learner, data_module)
     trainer.test(learner, data_module)

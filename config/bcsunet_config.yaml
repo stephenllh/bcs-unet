@@ -1,7 +1,6 @@
 ---
 model: "BCS-UNet"
 sampling_ratio: 0.125
-dataset_name: "stl10"
 bcs: True
 
 data_module:
