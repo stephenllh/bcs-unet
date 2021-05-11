@@ -9,12 +9,10 @@ class ReconNetLearner(pl.LightningModule):
         super().__init__()
         y_dim = int(config["sampling_ratio"] * config["img_dim"] ** 2)
         self.net = ReconNet(y_dim, config["img_dim"])
-        self.save_hyperparameters(config)
         self.config = config
-        # hparams = config
-        # self.hparams = hparams
         self.criterion = get_criterion(config)
         self._set_metrics(config)
+        self.save_hyperparameters(config)
 
     def forward(self, inputs):
         return self.net(inputs)
@@ -38,19 +36,20 @@ class ReconNetLearner(pl.LightningModule):
         loss = self.criterion(preds, targets)
 
         self.log(f"{mode}_loss", loss, prog_bar=True)
-        preds_ = preds.float().detach().cpu()
-        targets_ = targets.detach().cpu()
 
-        # Log validation metrics
-        if mode == "val":
-            for metric_name in self.config["learner"]["metrics"]:
-                metric = self.__getattr__(f"{mode}_{metric_name}")
-                self.log(
-                    f"{mode}_{metric_name}",
-                    metric(preds_, targets_),
-                    prog_bar=True,
-                )
-        return loss
+        # preds_ = preds.float().detach().cpu()
+        # targets_ = targets.detach().cpu()
+
+        # # Log validation metrics
+        # if mode == "val":
+        #     for metric_name in self.config["learner"]["metrics"]:
+        #         metric = self.__getattr__(f"{mode}_{metric_name}")
+        #         self.log(
+        #             f"{mode}_{metric_name}",
+        #             metric(preds_, targets_),
+        #             prog_bar=True,
+        #         )
+        # return loss
 
     def training_step(self, batch, batch_idx):
         return self.step(batch, mode="train")

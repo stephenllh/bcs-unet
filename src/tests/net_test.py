@@ -1,6 +1,20 @@
 import torch
 from benchmark.reconnet.net import ReconNet
 from benchmark.scsnet.net import SCSNetInit, SCSNetDeep
+from model.bcsunet import BCSUNet
+from utils import load_config
+
+
+def test_bcsunet():
+    config = load_config("../config/bcsunet_config.yaml")
+    net = BCSUNet(config)
+    batch_size = 2
+    y_input_dim = 8
+    inputs = torch.randn(batch_size, 2, y_input_dim, y_input_dim)
+    out1, out2 = net(inputs)
+    assert out1.shape == (batch_size, 1, y_input_dim * 4, y_input_dim * 4)
+    assert out1.shape == out2.shape
+    print("BCS-Unet: Passed all tests.")
 
 
 def test_reconnet(sr, img_dim=32):
@@ -74,7 +88,7 @@ def test_scsnet(sr, img_dim=32, block_size=4):
     else:
         print("The shape of reconstructed image - Passed.")
 
-    print("Passed all tests.")
+    print("SCSNet: Passed all tests.")
 
 
 def test_all():
@@ -83,4 +97,5 @@ def test_all():
 
 
 if __name__ == "__main__":
-    test_all()
+    # test_all()
+    test_bcsunet()

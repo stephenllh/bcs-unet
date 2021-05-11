@@ -7,13 +7,13 @@ data_module:
   data_dir: "../input"
   batch_size: 128
   val_percent: 0.1
-  sampling_ratio: 0.125
 
 net:
   upsamplenet:
     init_type: "xavier"
-    channels_list: (16, 8)
-    transpose_conv: False
+    out_channels_1: 16
+    out_channels_2: 8
+    use_transpose_conv: False
     learnable_sc: True
     spectral_norm: True
   unet:

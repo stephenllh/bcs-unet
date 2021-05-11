@@ -14,6 +14,7 @@ from data.stl10 import STL10DataModule
 from .learner import SCSNetLearner
 from utils import load_config
 
+
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 parser = argparse.ArgumentParser(description="Wheat detection with EfficientDet")
@@ -57,7 +58,7 @@ def run():
         default_root_dir="../",
         callbacks=callbacks,
         precision=(16 if config["trainer"]["fp16"] else 32),
-        logger=None,
+        logger=logger,
     )
     trainer.fit(learner, data_module)
     trainer.test(learner, data_module)

@@ -1,3 +1,5 @@
+import os
+import cv2
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
@@ -27,31 +29,54 @@ class STL10Dataset(BaseDataset):
         return len(self.data)
 
 
+class STL10ReconnetTestDataset(BaseDataset):
+    """
+    The test dataset of ReconNet is unique because we need to reconstruct image patches and combine.
+    This is because ReconNet can only be used on small images.
+    To reproduce this, crop the 96x96 STL10 images into 32x32.
+    """
+
+    def __init__(self, sampling_ratio: float, bcs: bool):
+        super().__init__(sampling_ratio=sampling_ratio, bcs=bcs)
+        self.root_dir = "../input/STL10/test_images_32x32"
+        self.filenames = os.listdir(self.root_dir)
+
+    def __getitem__(self, idx):
+        image = cv2.imread(self.filenames[idx], cv2.IMREAD_GRAYSCALE)
+        image = torch.tensor(image) / 255.0
+        image_ = image.unsqueeze(dim=0).unsqueeze(dim=1)
+        y = self.cs_operator(image_)
+        return y.squeeze(dim=0), image
+
+    def __len__(self):
+        return len(self.data)
+
+
 class STL10DataModule(pl.LightningDataModule):
     """Pytorch Lightning Data Module for PyTorch datasets, e.g. MNIST, FMNIST, SVHN, etc."""
 
-    def __init__(self, config):
+    def __init__(self, config, reconnet=False):
         super().__init__()
         self.config = config
         self.dm_config = config["data_module"]
+        self.reconnet = reconnet  # whether or not ReconNet is the architecture.
 
     def setup(self, stage=None):
-        train_tfms = transforms.Compose(
-            [
-                transforms.Resize(96),
-                transforms.RandomHorizontalFlip(p=0.5),
-                transforms.ColorJitter(brightness=0.2, contrast=0.2),
-                transforms.Grayscale(),
-                transforms.ToTensor(),
-            ]
-        )
-        val_tfms = transforms.Compose(
-            [
-                transforms.Resize(96),
-                transforms.Grayscale(),
-                transforms.ToTensor(),
-            ]
-        )
+        train_tfms_list = [transforms.RandomCrop(32)] if self.reconnet else []
+        train_tfms_list += [
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2),
+            transforms.Grayscale(),
+            transforms.ToTensor(),
+        ]
+        train_tfms = transforms.Compose(train_tfms_list)
+
+        val_tfms_list = [transforms.CenterCrop(32)] if self.reconnet else []
+        val_tfms_list += [
+            transforms.Grayscale(),
+            transforms.ToTensor(),
+        ]
+        val_tfms = transforms.Compose(val_tfms_list)
 
         self.train_dataset = STL10Dataset(
             sampling_ratio=self.config["sampling_ratio"],
@@ -67,12 +92,18 @@ class STL10DataModule(pl.LightningDataModule):
             train=True,
         )
 
-        self.test_dataset = STL10Dataset(
-            sampling_ratio=self.config["sampling_ratio"],
-            bcs=self.config["bcs"],
-            tfms=val_tfms,
-            train=False,
-        )
+        if self.reconnet:
+            self.test_dataset = STL10ReconnetTestDataset(
+                sampling_ratio=self.config["sampling_ratio"],
+                bcs=self.config["bcs"],
+            )
+        else:
+            self.test_dataset = STL10Dataset(
+                sampling_ratio=self.config["sampling_ratio"],
+                bcs=self.config["bcs"],
+                tfms=val_tfms,
+                train=False,
+            )
 
         dataset_size = len(self.train_dataset)
         indices = torch.randperm(dataset_size)
@@ -96,7 +127,17 @@ class STL10DataModule(pl.LightningDataModule):
         )
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.dm_config["batch_size"])
+        if self.reconnet:
+            batch_size = 9  # 9 image patches per 96x96 image
+        else:
+            batch_size = self.dm_config["batch_size"]
+
+        return DataLoader(self.test_dataset, batch_size=batch_size)
 
     def predict_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.dm_config["batch_size"])
+        if self.reconnet:
+            batch_size = 9  # 9 image patches per 96x96 image
+        else:
+            batch_size = self.dm_config["batch_size"]
+
+        return DataLoader(self.test_dataset, batch_size=batch_size)

@@ -7,19 +7,18 @@ from .utils import init_weights
 class BCSUNet(nn.Module):
     """Combines simple residual upsample model and U-Net model"""
 
-    def __init__(self, net_config):
+    def __init__(self, config):
         super().__init__()
-        config = net_config
         upsamplenet = UpsampleNet(
-            sampling_ratio=config["sampling_ratio"], config=config["upsamplenet"]
+            sampling_ratio=config["sampling_ratio"], upsamplenet_config=config["net"]["upsamplenet"]
         )
         self.upsamplenet = init_weights(
-            upsamplenet, init_type=config["upsamplenet"]["init_type"]
+            upsamplenet, init_type=config["net"]["upsamplenet"]["init_type"]
         )
-        unet = UNet(config["unet"])
-        self.unet = init_weights(unet, init_type=config["unet"]["init_type"])
+        unet = UNet(config["net"]["unet"])
+        self.unet = init_weights(unet, init_type=config["net"]["unet"]["init_type"])
 
     def forward(self, x):
-        out1 = self.upsamplenet(x)
-        out2 = self.unet(out1)
-        return out1, out2
+        out1a, out1b = self.upsamplenet(x)
+        out2 = self.unet(out1a)
+        return out1b, out2

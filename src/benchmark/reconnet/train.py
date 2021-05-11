@@ -31,7 +31,7 @@ def run():
     elif args.dataset == "SVHN":
         data_module = SVHNDataModule(config)
     elif args.dataset == "STL10":
-        data_module = STL10DataModule(config)
+        data_module = STL10DataModule(config, reconnet=True)
     else:
         raise NotImplementedError
 
@@ -60,7 +60,6 @@ def run():
         callbacks=callbacks,
         precision=(16 if config["trainer"]["fp16"] else 32),
         logger=logger
-        # logger=None,
     )
     trainer.fit(learner, data_module)
     trainer.test(learner, data_module)

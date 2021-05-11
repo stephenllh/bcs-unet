@@ -2,6 +2,7 @@ import os
 import yaml
 import torch
 import math
+import cv2
 
 
 def voltage2pixel(y, phi, low, high):
@@ -49,3 +50,20 @@ def reshape_into_block(y, sr: float, block_size=4):
     y = y.reshape(h, w, c)
     y = y.transpose((2, 0, 1))
     return y
+
+
+def create_patches(root_dir, size):
+
+    if not os.path.exists(f"{root_dir}_32x32"):
+        os.mkdir(f"{root_dir}_32x32")
+
+    files = os.listdir(root_dir)
+
+    for file in files:
+        img = cv2.imread(f"{root_dir}/{file}")
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img = img.reshape(img.shape[0] // size, size, img.shape[1] // size, size)
+        img = img.transpose(0, 2, 1, 3).reshape(-1, size, size)
+        for idx, img_patch in enumerate(img):
+            filename = f"{root_dir}_32x32/{file.split('.')[0]}_{idx}.png"
+            cv2.imwrite(filename, img_patch)

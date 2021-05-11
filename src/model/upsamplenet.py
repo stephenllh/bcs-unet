@@ -4,6 +4,41 @@ from torch.nn import functional as F
 from model.layers import SNConv2d
 
 
+class UpsampleNet(nn.Module):
+    def __init__(self, sampling_ratio, upsamplenet_config):
+        super().__init__()
+        kernel_size = 4
+        first_out_channels = int(sampling_ratio * kernel_size ** 2)
+        config = upsamplenet_config
+        print(config["out_channels_1"])
+        self.up1 = UpResBlock(
+            in_channels=first_out_channels,
+            out_channels=config["out_channels_1"],
+            middle_channels=None,
+            upsample=True,
+            use_transpose_conv=config["use_transpose_conv"],
+            learnable_sc=config["learnable_sc"],
+            spectral_norm=config["spectral_norm"],
+        )
+
+        self.up2 = UpResBlock(
+            in_channels=config["out_channels_1"],
+            out_channels=config["out_channels_2"],
+            middle_channels=None,
+            upsample=True,
+            use_transpose_conv=config["use_transpose_conv"],
+            learnable_sc=config["learnable_sc"],
+            spectral_norm=config["spectral_norm"],
+        )
+        self.conv = nn.Conv2d(config["out_channels_2"], 1, kernel_size=3, stride=1, padding=1, bias=True)
+
+    def forward(self, x):
+        x = self.up1(x)
+        x1 = self.up2(x)    # passed to UNet
+        x2 = self.conv(x1)  # passed to the loss function to backpropagate
+        return torch.tanh(x1), torch.tanh(x2)
+
+
 class UpResBlock(nn.Module):
     def __init__(
         self,
@@ -78,13 +113,13 @@ class UpResBlock(nn.Module):
                 F.interpolate(x, scale_factor=2, mode="bilinear", align_corners=False)
             )
 
-    def _residual_block(self, x):  # bn - relu - conv - bn - relu - conv
+    def _residual_block(self, x):
+        x = self._upsample(x, self.conv1) if self.upsample else self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
-        x = self._upsample(x, self.conv1) if self.upsample else self.conv1(x)
-        x = self.relu(x)
+        x = self.conv2(x)
         x = self.bn2(x)
-        out = self.conv2(x)
+        out = self.relu(x)
         return out
 
     def _shortcut(self, x):
@@ -95,35 +130,3 @@ class UpResBlock(nn.Module):
 
     def forward(self, x):
         return self._residual_block(x) + self._shortcut(x)
-
-
-class UpsampleNet(nn.Module):
-    def __init__(self, sampling_ratio, config):
-        super().__init__()
-        kernel_size = 4
-        first_out_channels = int(sampling_ratio * kernel_size ** 2)
-
-        self.up1 = UpResBlock(
-            in_channels=first_out_channels,
-            out_channels=config["channels_list"][0],
-            middle_channels=None,
-            upsample=True,
-            use_transpose_conv=config["use_transpose_conv"],
-            learnable_sc=config["learnable_sc"],
-            spectral_norm=config["spectral_norm"],
-        )
-
-        self.up2 = UpResBlock(
-            in_channels=config["channels_list"][0],
-            out_channels=config["channels_list"][1],
-            middle_channels=None,
-            upsample=True,
-            use_transpose_conv=config["use_transpose_conv"],
-            learnable_sc=config["learnable_sc"],
-            spectral_norm=config["spectral_norm"],
-        )
-
-    def forward(self, x):
-        x = self.up1(x)
-        x = self.up2(x)
-        return torch.tanh(x)
