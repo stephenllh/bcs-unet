@@ -30,13 +30,15 @@ class UpsampleNet(nn.Module):
             learnable_sc=config["learnable_sc"],
             spectral_norm=config["spectral_norm"],
         )
-        self.conv = nn.Conv2d(config["out_channels_2"], 1, kernel_size=3, stride=1, padding=1, bias=True)
+        self.conv = nn.Conv2d(
+            config["out_channels_2"], 1, kernel_size=3, stride=1, padding=1, bias=True
+        )
 
     def forward(self, x):
         x = self.up1(x)
-        x1 = self.up2(x)    # passed to UNet
+        x1 = self.up2(x)  # passed to UNet
         x2 = self.conv(x1)  # passed to the loss function to backpropagate
-        return torch.tanh(x1), torch.tanh(x2)
+        return x1, torch.sigmoid(x2)
 
 
 class UpResBlock(nn.Module):

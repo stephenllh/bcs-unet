@@ -41,18 +41,18 @@ class SCSNetLearner(pl.LightningModule):
         loss = loss1 + loss2
         self.log(f"{mode}_loss", loss, prog_bar=False)
 
-        # preds_ = preds2.float().detach().cpu()
-        # targets_ = targets.detach().cpu()
+        preds_ = preds2.float().detach().cpu()
+        targets_ = targets.detach().cpu()
 
         # Log validation metrics
-        # if mode == "val":
-        #     for metric_name in self.config["learner"]["metrics"]:
-        #         metric = self.__getattr__(f"{mode}_{metric_name}")
-        #         self.log(
-        #             f"{mode}_{metric_name}",
-        #             metric(preds_, targets_),
-        #             prog_bar=True,
-        #         )
+        if mode == "val":
+            for metric_name in self.config["learner"]["metrics"]:
+                metric = self.__getattr__(f"{mode}_{metric_name}")
+                self.log(
+                    f"{mode}_{metric_name}",
+                    metric(preds_, targets_),
+                    prog_bar=True,
+                )
         return loss
 
     def training_step(self, batch, batch_idx):

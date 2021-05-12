@@ -14,7 +14,7 @@ def test_bcsunet():
     out1, out2 = net(inputs)
     assert out1.shape == (batch_size, 1, y_input_dim * 4, y_input_dim * 4)
     assert out1.shape == out2.shape
-    print("BCS-Unet: Passed all tests.")
+    print("BCS-UNet: Passed all tests.")
 
 
 def test_reconnet(sr, img_dim=32):

@@ -1,25 +1,27 @@
 import torch
 import pytorch_lightning as pl
-from net import BCSUNet
+from model.bcsunet import BCSUNet
 from engine.dispatcher import get_scheduler, get_criterion, get_metrics
 
 
-class SCSNetLearner(pl.LightningModule):
+class BCSUNetLearner(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
-        self.net = BCSUNet(config["net"])
-        self.hparams = self.config = config
+        self.net = BCSUNet(config)
+        self.config = config
         self.criterion = get_criterion(config)
         self._set_metrics(config)
+        self.save_hyperparameters(config)
 
     def forward(self, inputs):
         _, reconstructed_image = self.net(inputs)
         return reconstructed_image
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.AdamW(
             self.parameters(),
             lr=self.config["learner"]["lr"],
+            weight_decay=self.config["learner"]["weight_decay"],
         )
         scheduler = get_scheduler(optimizer, self.config)
         return {
@@ -55,6 +57,9 @@ class SCSNetLearner(pl.LightningModule):
         return self.step(batch, mode="train")
 
     def validation_step(self, batch, batch_idx):
+        return self.step(batch, mode="val")
+
+    def test_step(self, batch, batch_idx):
         return self.step(batch, mode="val")
 
     def _set_metrics(self, config):

@@ -41,12 +41,10 @@ def run():
         LearningRateMonitor(),
     ]
 
-    log_name = (
-        f"SCSNet_{config['dataset_name']}_{int(config['sampling_ratio'] * 10000)}"
-    )
+    log_name = f"SCSNet_{args.dataset}_{int(config['sampling_ratio'] * 10000)}"
     logger = TensorBoardLogger(save_dir="../logs", name=log_name)
 
-    message = f"Running SCSNet on {config['dataset_name']} dataset. Sampling ratio = {config['sampling_ratio']}"
+    message = f"Running SCSNet on {args.dataset} dataset. Sampling ratio = {config['sampling_ratio']}"
     print("-" * 100)
     print(message)
     print("-" * 100)

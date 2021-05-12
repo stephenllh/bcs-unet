@@ -10,7 +10,8 @@ class BCSUNet(nn.Module):
     def __init__(self, config):
         super().__init__()
         upsamplenet = UpsampleNet(
-            sampling_ratio=config["sampling_ratio"], upsamplenet_config=config["net"]["upsamplenet"]
+            sampling_ratio=config["sampling_ratio"],
+            upsamplenet_config=config["net"]["upsamplenet"],
         )
         self.upsamplenet = init_weights(
             upsamplenet, init_type=config["net"]["upsamplenet"]["init_type"]

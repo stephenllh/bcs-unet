@@ -86,6 +86,7 @@ class EMNISTDataModule(pl.LightningDataModule):
             self.train_dataset,
             batch_size=self.dm_config["batch_size"],
             sampler=train_sampler,
+            num_workers=self.dm_config["num_workers"],
         )
 
     def val_dataloader(self):
@@ -94,10 +95,19 @@ class EMNISTDataModule(pl.LightningDataModule):
             self.val_dataset,
             batch_size=self.dm_config["batch_size"],
             sampler=val_sampler,
+            num_workers=self.dm_config["num_workers"],
         )
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.dm_config["batch_size"])
+        return DataLoader(
+            self.test_dataset,
+            batch_size=self.dm_config["batch_size"],
+            num_workers=self.dm_config["num_workers"],
+        )
 
     def predict_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.dm_config["batch_size"])
+        return DataLoader(
+            self.test_dataset,
+            batch_size=self.dm_config["batch_size"],
+            num_workers=self.dm_config["num_workers"],
+        )

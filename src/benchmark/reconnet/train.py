@@ -53,13 +53,12 @@ def run():
 
     trainer = pl.Trainer(
         gpus=config["trainer"]["gpu"],
-        # max_epochs=config["trainer"]["epochs"],
-        max_epochs=1,
+        max_epochs=config["trainer"]["epochs"],
         default_root_dir="../",
         progress_bar_refresh_rate=20,
         callbacks=callbacks,
         precision=(16 if config["trainer"]["fp16"] else 32),
-        logger=logger
+        logger=logger,
     )
     trainer.fit(learner, data_module)
     trainer.test(learner, data_module)
