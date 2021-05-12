@@ -1,18 +1,33 @@
 ---
-model: "reconnet"
+model: "BCS-UNet"
 sampling_ratio: 0.125
-img_dim: 32
 bcs: True
 
 data_module:
   data_dir: "../input"
   batch_size: 128
   val_percent: 0.1
+  num_workers: 4
+
+net:
+  upsamplenet:
+    init_type: "xavier"
+    out_channels_1: 16
+    out_channels_2: 8
+    use_transpose_conv: False
+    learnable_sc: True
+    spectral_norm: True
+  unet:
+    init_type: "xavier"
+    channels: 16
+    use_dropout: False
 
 learner:
+  intermediate_image: True
   criterion: "L1" 
-  metrics: ["psnr"]  # ["psnr", "ssim"] 
-  lr: 0.001
+  metrics: ["psnr", "ssim"]  
+  lr: 0.0003
+  weight_decay: 0.01
   scheduler:
     type: "reduce_lr_on_plateau"  # or "one_cycle"
     args_reduce_lr_on_plateau:

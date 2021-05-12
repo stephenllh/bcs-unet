@@ -7,6 +7,7 @@ data_module:
   data_dir: "../input"
   batch_size: 128
   val_percent: 0.1
+  num_workers: 4
 
 net:
   upsamplenet:
@@ -18,7 +19,7 @@ net:
     spectral_norm: True
   unet:
     init_type: "xavier"
-    channels: 32
+    channels: 16
     use_dropout: False
 
 learner:
@@ -46,6 +47,6 @@ callbacks:
     patience: 5
 
 trainer:
-  epochs: 100
+  epochs: 1
   gpu: 1
   fp16: True

@@ -1,5 +1,5 @@
 ---
-model: "reconnet"
+model: "SCSNet"
 sampling_ratio: 0.125
 in_channels: 2
 bcs: True
@@ -8,10 +8,11 @@ data_module:
   data_dir: "../input"
   batch_size: 128
   val_percent: 0.1
+  num_workers: 4
 
 learner:
   criterion: "L1" 
-  metrics: ["psnr", "ssim"]  
+  metrics: ["psnr"]  # ["psnr", "ssim"]  
   lr: 0.0003
   weight_decay: 0.01
   scheduler:
@@ -33,6 +34,6 @@ callbacks:
     patience: 5
 
 trainer:
-  epochs: 100
+  epochs: 1
   gpu: 1
   fp16: True
