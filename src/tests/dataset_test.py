@@ -19,6 +19,7 @@ def stl10_test_dataset_test():
     print(y.shape, y.min(), y.max())
     print(image.shape, image.min(), image.max())
 
+
 # def BSDS500_test():
 #     config = load_config("../config/reconnet_config.yaml")
 #     dm = BSDS500DataModule(config=config)
@@ -30,4 +31,3 @@ def stl10_test_dataset_test():
 
 if __name__ == "__main__":
     stl10_test_dataset_test()
-

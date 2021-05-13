@@ -7,6 +7,7 @@ import torchvision
 from torchvision import transforms
 import pytorch_lightning as pl
 from .base_dataset import BaseDataset
+from utils import create_patches
 
 
 class STL10Dataset(BaseDataset):
@@ -38,11 +39,17 @@ class STL10ReconnetTestDataset(BaseDataset):
 
     def __init__(self, sampling_ratio: float, bcs: bool):
         super().__init__(sampling_ratio=sampling_ratio, bcs=bcs)
-        self.root_dir = "../input/STL10/test_images_32x32"
-        self.filenames = os.listdir(self.root_dir)
+        self.root_dir = "../input/STL10"
+        self.data_dir = os.path.join(self.root_dir, "test_images_32x32")
+        if not os.path.exists(self.data_dir):
+            create_patches(self.root_dir, size=32)
+        self.filenames = os.listdir(self.data_dir)
 
     def __getitem__(self, idx):
-        image = cv2.imread(os.path.join(self.root_dir, self.filenames[idx]), cv2.IMREAD_GRAYSCALE)
+        image = cv2.imread(
+            os.path.join(self.data_dir, self.filenames[idx]),
+            cv2.IMREAD_GRAYSCALE,
+        )
         image = torch.tensor(image) / 255.0
         image = image.unsqueeze(dim=0)
         image_ = image.unsqueeze(dim=1)
