@@ -42,9 +42,10 @@ class STL10ReconnetTestDataset(BaseDataset):
         self.filenames = os.listdir(self.root_dir)
 
     def __getitem__(self, idx):
-        image = cv2.imread(self.filenames[idx], cv2.IMREAD_GRAYSCALE)
+        image = cv2.imread(os.path.join(self.root_dir, self.filenames[idx]), cv2.IMREAD_GRAYSCALE)
         image = torch.tensor(image) / 255.0
-        image_ = image.unsqueeze(dim=0).unsqueeze(dim=1)
+        image = image.unsqueeze(dim=0)
+        image_ = image.unsqueeze(dim=1)
         y = self.cs_operator(image_)
         return y.squeeze(dim=0), image
 

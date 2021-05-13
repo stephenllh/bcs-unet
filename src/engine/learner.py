@@ -42,13 +42,14 @@ class BCSUNetLearner(pl.LightningModule):
         self.log(f"{mode}_loss", loss, prog_bar=False)
 
         if mode == "val":
-            preds_ = preds2.float().detach()
+            preds_ = preds2.float().cpu().detach()
+            targets_ = targets.float().cpu().detach()
             for metric_name in self.config["learner"]["metrics"]:
                 MetricClass = self.__getattr__(f"{mode}_{metric_name}")
                 if MetricClass is not None:
                     self.log(
                         f"{mode}_{metric_name}",
-                        MetricClass(preds_, targets),
+                        MetricClass(preds_, targets_),
                         prog_bar=True,
                     )
         return loss
