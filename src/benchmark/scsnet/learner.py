@@ -7,7 +7,6 @@ from engine.dispatcher import get_scheduler, get_criterion, get_metrics
 class SCSNetLearner(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
-        print(config["in_channels"])
         self.net1 = SCSNetInit(config["in_channels"])
         self.net2 = SCSNetDeep()
         self.config = config
@@ -46,7 +45,7 @@ class SCSNetLearner(pl.LightningModule):
 
         # Log validation metrics
         if mode == "val":
-            for metric_name in self.config["learner"]["metrics"]:
+            for metric_name in self.config["learner"]["val_metrics"]:
                 metric = self.__getattr__(f"{mode}_{metric_name}")
                 self.log(
                     f"{mode}_{metric_name}",
@@ -61,8 +60,26 @@ class SCSNetLearner(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         return self.step(batch, mode="val")
 
+    def test_step(self, batch, batch_idx):
+        inputs, targets = batch
+        preds1 = self.net1(inputs)
+        preds2 = self.net2(preds1)
+        for metric_name in self.config["learner"]["test_metrics"]:
+            metric = self.__getattr__(f"test_{metric_name}")
+            self.log(
+                f"test_{metric_name}",
+                metric(preds2, targets),
+                prog_bar=True,
+            )
+
     def _set_metrics(self, config):
-        """Set Pytorch Lightning Metrics as attributes."""
-        for metric_name in config["learner"]["metrics"]:
-            self.__setattr__(f"train_{metric_name}", get_metrics(metric_name, config))
+        """
+        Set TorchMetrics as attributes in a dynamical manner.
+        For instance, `self.train_accuracy = torchmetrics.Accuracy()`
+        """
+        for metric_name in config["learner"]["val_metrics"]:
+            # self.__setattr__(f"train_{metric_name}", get_metrics(metric_name, config))
             self.__setattr__(f"val_{metric_name}", get_metrics(metric_name, config))
+
+        for metric_name in config["learner"]["test_metrics"]:
+            self.__setattr__(f"test_{metric_name}", get_metrics(metric_name, config))

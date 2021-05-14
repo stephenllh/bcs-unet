@@ -8,10 +8,12 @@ data_module:
   data_dir: "../input"
   batch_size: 128
   val_percent: 0.1
+  num_workers: 4
 
 learner:
   criterion: "L1" 
-  metrics: ["psnr"]  # ["psnr", "ssim"] 
+  val_metrics: ["psnr"]
+  test_metrics: ["psnr", "ssim"] 
   lr: 0.001
   scheduler:
     type: "reduce_lr_on_plateau"  # or "one_cycle"

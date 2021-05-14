@@ -33,12 +33,14 @@ class BCSUNetLearner(pl.LightningModule):
     def step(self, batch, mode="train"):
         inputs, targets = batch
         preds1, preds2 = self.net(inputs)
+
         if self.config["learner"]["intermediate_image"]:
             loss1 = self.criterion(preds1, targets)
             loss2 = self.criterion(preds2, targets)
             loss = loss1 + loss2
         else:
             loss = self.criterion(preds2, targets)
+
         self.log(f"{mode}_loss", loss, prog_bar=False)
 
         if mode == "val":
@@ -68,3 +70,4 @@ class BCSUNetLearner(pl.LightningModule):
         for metric_name in config["learner"]["metrics"]:
             self.__setattr__(f"train_{metric_name}", get_metrics(metric_name, config))
             self.__setattr__(f"val_{metric_name}", get_metrics(metric_name, config))
+            self.__setattr__(f"test_{metric_name}", get_metrics(metric_name, config))

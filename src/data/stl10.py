@@ -57,7 +57,7 @@ class STL10ReconnetTestDataset(BaseDataset):
         return y.squeeze(dim=0), image
 
     def __len__(self):
-        return len(self.data)
+        return len(self.filenames)
 
 
 class STL10DataModule(pl.LightningDataModule):
@@ -137,20 +137,15 @@ class STL10DataModule(pl.LightningDataModule):
         )
 
     def test_dataloader(self):
-        if self.reconnet:
-            batch_size = 9  # 9 image patches per 96x96 image
-        else:
-            batch_size = self.dm_config["batch_size"]
-
         return DataLoader(
             self.test_dataset,
-            batch_size=batch_size,
+            batch_size=self.dm_config["batch_size"],
             num_workers=self.dm_config["num_workers"],
         )
 
     def predict_dataloader(self):
         if self.reconnet:
-            batch_size = 9  # 9 image patches per 96x96 image
+            batch_size = 9 * 12  # 9 image patches per 96x96 image
         else:
             batch_size = self.dm_config["batch_size"]
 

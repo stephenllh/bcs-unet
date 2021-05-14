@@ -37,18 +37,18 @@ class ReconNetLearner(pl.LightningModule):
 
         self.log(f"{mode}_loss", loss, prog_bar=True)
 
-        preds_ = preds.float().detach().cpu()
-        targets_ = targets.detach().cpu()
+        # preds_ = preds.float().detach().cpu()
+        # targets_ = targets.detach().cpu()
 
-        # Log validation metrics
-        if mode == "val":
-            for metric_name in self.config["learner"]["metrics"]:
-                metric = self.__getattr__(f"{mode}_{metric_name}")
-                self.log(
-                    f"{mode}_{metric_name}",
-                    metric(preds_, targets_),
-                    prog_bar=True,
-                )
+        # # Log validation metrics
+        # if mode == "val":
+        #     for metric_name in self.config["learner"]["metrics"]:
+        #         metric = self.__getattr__(f"{mode}_{metric_name}")
+        #         self.log(
+        #             f"{mode}_{metric_name}",
+        #             metric(preds_, targets_),
+        #             prog_bar=True,
+        #         )
         return loss
 
     def training_step(self, batch, batch_idx):
@@ -60,24 +60,24 @@ class ReconNetLearner(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         inputs, targets = batch
         preds = self.net(inputs)
-        for metric_name in self.config["learner"]["metrics"]:
+        preds_ = preds.float().detach().cpu()
+        targets_ = targets.detach().cpu()
+        for metric_name in self.config["learner"]["test_metrics"]:
             metric = self.__getattr__(f"test_{metric_name}")
-            _ = metric(preds, targets)
-
-    def test_epoch_end(self, outputs):
-        metrics_dict = {}
-        for metric_name in self.config["learner"]["metrics"]:
-            metric = self.__getattr__(f"test_{metric_name}")
-            test_metric = metric.compute()
-            metrics_dict.update({metric_name: test_metric})
-        return metrics_dict
+            self.log(
+                f"test_{metric_name}",
+                metric(preds_, targets_),
+                prog_bar=True,
+            )
 
     def _set_metrics(self, config):
         """
         Set TorchMetrics as attributes in a dynamical manner.
         For instance, `self.train_accuracy = torchmetrics.Accuracy()`
         """
-        for metric_name in config["learner"]["metrics"]:
-            self.__setattr__(f"train_{metric_name}", get_metrics(metric_name, config))
+        for metric_name in config["learner"]["val_metrics"]:
+            # self.__setattr__(f"train_{metric_name}", get_metrics(metric_name, config))
             self.__setattr__(f"val_{metric_name}", get_metrics(metric_name, config))
+
+        for metric_name in config["learner"]["test_metrics"]:
             self.__setattr__(f"test_{metric_name}", get_metrics(metric_name, config))

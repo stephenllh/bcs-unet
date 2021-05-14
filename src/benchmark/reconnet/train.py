@@ -17,7 +17,7 @@ from utils import load_config
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 parser = argparse.ArgumentParser(description="Wheat detection with EfficientDet")
-parser.add_argument("-d", "--dataset", type=str, help="'emnist', 'svhn', or 'stl10'")
+parser.add_argument("-d", "--dataset", type=str, help="'EMNIST', 'SVHN', or 'STL10'")
 args = parser.parse_args()
 
 
@@ -31,6 +31,7 @@ def run():
     elif args.dataset == "SVHN":
         data_module = SVHNDataModule(config)
     elif args.dataset == "STL10":
+        config["data_module"]["num_workers"] = 0
         data_module = STL10DataModule(config, reconnet=True)
     else:
         raise NotImplementedError
@@ -59,9 +60,10 @@ def run():
         callbacks=callbacks,
         precision=(16 if config["trainer"]["fp16"] else 32),
         logger=logger,
+        limit_train_batches=3
     )
     trainer.fit(learner, data_module)
-    trainer.test(learner, data_module)
+    trainer.test(learner, datamodule=data_module, ckpt_path="best")
 
 
 if __name__ == "__main__":
