@@ -33,7 +33,6 @@ def run():
         data_module = SVHNDataModule(config)
     elif args.dataset == "STL10":
         config["data_module"]["batch_size"] = 64
-        config["data_module"]["num_workers"] = 1
         data_module = STL10DataModule(config)
     else:
         raise NotImplementedError
@@ -61,6 +60,9 @@ def run():
         callbacks=callbacks,
         precision=(16 if config["trainer"]["fp16"] else 32),
         logger=logger,
+        limit_train_batches=2,
+        limit_val_batches=2,
+        limit_test_batches=2,
     )
     trainer.fit(learner, data_module)
     trainer.test(learner, datamodule=data_module, ckpt_path="best")
