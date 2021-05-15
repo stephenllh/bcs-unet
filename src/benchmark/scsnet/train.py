@@ -55,10 +55,14 @@ def run():
     trainer = pl.Trainer(
         gpus=config["trainer"]["gpu"],
         max_epochs=config["trainer"]["epochs"],
+        # max_epochs=1,
         default_root_dir="../",
         callbacks=callbacks,
         precision=(16 if config["trainer"]["fp16"] else 32),
         logger=logger,
+        # limit_train_batches=1,
+        # limit_val_batches=1,
+        # limit_test_batches=2,
     )
     trainer.fit(learner, data_module)
     trainer.test(learner, datamodule=data_module, ckpt_path="best")

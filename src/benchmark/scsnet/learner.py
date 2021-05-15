@@ -38,13 +38,13 @@ class SCSNetLearner(pl.LightningModule):
         loss1 = self.criterion(preds1, targets)
         loss2 = self.criterion(preds2, targets)
         loss = loss1 + loss2
-        self.log(f"{mode}_loss", loss, prog_bar=False)
 
         preds_ = preds2.float().detach()
         targets_ = targets.detach()
 
         # Log validation metrics
         if mode == "val":
+            self.log(f"{mode}_loss", loss2, prog_bar=True)
             for metric_name in self.config["learner"]["val_metrics"]:
                 metric = self.__getattr__(f"{mode}_{metric_name}")
                 self.log(
@@ -66,9 +66,14 @@ class SCSNetLearner(pl.LightningModule):
         preds2 = self.net2(preds1).float()
         for metric_name in self.config["learner"]["test_metrics"]:
             metric = self.__getattr__(f"test_{metric_name}")
+            metric(preds2, targets)
+
+    def test_epoch_end(self, outputs):
+        for metric_name in self.config["learner"]["test_metrics"]:
+            metric = self.__getattr__(f"test_{metric_name}")
             self.log(
                 f"test_{metric_name}",
-                metric(preds2, targets),
+                metric.compute(),
                 prog_bar=True,
             )
 
