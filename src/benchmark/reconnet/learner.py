@@ -60,13 +60,11 @@ class ReconNetLearner(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         inputs, targets = batch
         preds = self.net(inputs)
-        preds_ = preds.float().detach().cpu()
-        targets_ = targets.detach().cpu()
         for metric_name in self.config["learner"]["test_metrics"]:
             metric = self.__getattr__(f"test_{metric_name}")
             self.log(
                 f"test_{metric_name}",
-                metric(preds_, targets_),
+                metric(preds, targets),
                 prog_bar=True,
             )
 
