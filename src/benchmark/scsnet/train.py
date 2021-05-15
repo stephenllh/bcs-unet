@@ -54,8 +54,7 @@ def run():
 
     trainer = pl.Trainer(
         gpus=config["trainer"]["gpu"],
-        # max_epochs=config["trainer"]["epochs"],
-        max_epochs=1,
+        max_epochs=config["trainer"]["epochs"],
         default_root_dir="../",
         callbacks=callbacks,
         precision=(16 if config["trainer"]["fp16"] else 32),
