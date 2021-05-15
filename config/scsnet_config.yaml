@@ -15,7 +15,6 @@ learner:
   val_metrics: ["psnr"]  
   test_metrics: ["psnr", "ssim"]  
   lr: 0.0003
-  weight_decay: 0.01
   scheduler:
     type: "reduce_lr_on_plateau"  # or "one_cycle"
     args_reduce_lr_on_plateau:
