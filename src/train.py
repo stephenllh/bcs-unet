@@ -36,6 +36,7 @@ def run():
 
     learner = BCSUNetLearner(config)
     # print(learner.net)
+    # return
 
     callbacks = [
         ModelCheckpoint(**config["callbacks"]["checkpoint"]),

@@ -10,7 +10,7 @@ class UpsampleNet(nn.Module):
         kernel_size = 4
         first_out_channels = int(sampling_ratio * kernel_size ** 2)
         config = upsamplenet_config
-        print(config["out_channels_1"])
+
         self.up1 = UpResBlock(
             in_channels=first_out_channels,
             out_channels=config["out_channels_1"],

@@ -23,11 +23,11 @@ net:
     use_dropout: False
 
 learner:
-  intermediate_image: True
+  intermediate_image: False
   criterion: "L1" 
   metrics: ["psnr", "ssim"]  
-  lr: 0.0003
-  weight_decay: 0.01
+  lr: 0.002
+  weight_decay: 0.001
   scheduler:
     type: "reduce_lr_on_plateau"  # or "one_cycle"
     args_reduce_lr_on_plateau:
@@ -44,9 +44,9 @@ callbacks:
     save_last: True
   early_stopping:
     monitor: "val_loss"
-    patience: 5
+    patience: 6
 
 trainer:
-  epochs: 1
+  epochs: 50
   gpu: 1
   fp16: True

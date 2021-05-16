@@ -38,14 +38,14 @@ class BCSUNetLearner(pl.LightningModule):
             loss1 = self.criterion(preds1, targets)
             loss2 = self.criterion(preds2, targets)
             loss = loss1 + loss2
+            self.log(f"{mode}_loss", loss2, prog_bar=False)
         else:
             loss = self.criterion(preds2, targets)
-
-        self.log(f"{mode}_loss", loss, prog_bar=False)
+            self.log(f"{mode}_loss", loss, prog_bar=False)
 
         if mode == "val":
-            preds_ = preds2.float().cpu().detach()
-            targets_ = targets.float().cpu().detach()
+            preds_ = preds2.float().detach()
+            targets_ = targets.float().detach()
             for metric_name in self.config["learner"]["metrics"]:
                 MetricClass = self.__getattr__(f"{mode}_{metric_name}")
                 if MetricClass is not None:
@@ -63,7 +63,20 @@ class BCSUNetLearner(pl.LightningModule):
         return self.step(batch, mode="val")
 
     def test_step(self, batch, batch_idx):
-        return self.step(batch, mode="val")
+        inputs, targets = batch
+        _, preds = self.net(inputs)
+        for metric_name in self.config["learner"]["metrics"]:
+            metric = self.__getattr__(f"test_{metric_name}")
+            metric(preds.float(), targets)
+
+    def test_epoch_end(self, outputs):
+        for metric_name in self.config["learner"]["metrics"]:
+            metric = self.__getattr__(f"test_{metric_name}")
+            self.log(
+                f"test_{metric_name}",
+                metric.compute(),
+                prog_bar=True,
+            )
 
     def _set_metrics(self, config):
         """Set Pytorch Lightning Metrics as attributes."""
