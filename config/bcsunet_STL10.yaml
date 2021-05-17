@@ -5,9 +5,9 @@ bcs: True
 
 data_module:
   data_dir: "../input"
-  batch_size: 128
+  batch_size: 64
   val_percent: 0.1
-  num_workers: 4
+  num_workers: 0
 
 net:
   upsamplenet:
@@ -15,19 +15,20 @@ net:
     out_channels_1: 16
     out_channels_2: 8
     use_transpose_conv: False
-    learnable_sc: True
+    learnable_sc: False
     spectral_norm: True
   unet:
     init_type: "xavier"
     channels: 16
-    use_dropout: False
+    use_dropout: True
 
 learner:
-  intermediate_image: False
+  intermediate_image: True
   criterion: "L1" 
-  metrics: ["psnr", "ssim"]  
-  lr: 0.002
-  weight_decay: 0.001
+  val_metrics: ["psnr"]
+  test_metrics: ["psnr", "ssim"] 
+  lr: 0.001
+  weight_decay: 0.0
   scheduler:
     type: "reduce_lr_on_plateau"  # or "one_cycle"
     args_reduce_lr_on_plateau:

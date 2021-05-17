@@ -7,7 +7,8 @@ from engine.dispatcher import get_scheduler, get_criterion, get_metrics
 class SCSNetLearner(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
-        self.net1 = SCSNetInit(config["in_channels"])
+        in_channels = int(config["sampling_ratio"] * 16)
+        self.net1 = SCSNetInit(in_channels)
         self.net2 = SCSNetDeep()
         self.config = config
         self.criterion = get_criterion(config)

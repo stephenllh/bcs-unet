@@ -1,7 +1,6 @@
 ---
 model: "SCSNet"
-sampling_ratio: 0.125
-in_channels: 2
+sampling_ratio: 0.0625
 bcs: True
 
 data_module:

@@ -1,5 +1,5 @@
 from torch import nn
-from .upsamplenet import UpsampleNet
+from .upsamplenet import UpsampleNet, ReshapeNet
 from .unet import UNet
 from .utils import init_weights
 
@@ -16,7 +16,7 @@ class BCSUNet(nn.Module):
         self.upsamplenet = init_weights(
             upsamplenet, init_type=config["net"]["upsamplenet"]["init_type"]
         )
-        unet = UNet(config["net"]["unet"])
+        unet = UNet(config["net"]["unet"], input_nc=1)
         self.unet = init_weights(unet, init_type=config["net"]["unet"]["init_type"])
 
     def forward(self, x):

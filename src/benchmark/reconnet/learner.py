@@ -64,7 +64,7 @@ class ReconNetLearner(pl.LightningModule):
             metric = self.__getattr__(f"test_{metric_name}")
             self.log(
                 f"test_{metric_name}",
-                metric(preds, targets),
+                metric(preds.float(), targets),
                 prog_bar=True,
             )
 

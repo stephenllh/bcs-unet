@@ -11,7 +11,7 @@ from pytorch_lightning.utilities.seed import seed_everything
 from data.emnist import EMNISTDataModule
 from data.svhn import SVHNDataModule
 from data.stl10 import STL10DataModule
-from engine.learner import BCSUNetLearner
+from .learner import SCSNetLearner
 from utils import load_config
 
 
@@ -25,44 +25,33 @@ args = parser.parse_args()
 def run():
     seed_everything(seed=0, workers=True)
 
-    config = load_config(f"../config/bcsunet_{args.dataset}.yaml")
+    config = load_config("../config/scsnet_config.yaml")
 
     if args.dataset == "EMNIST":
         data_module = EMNISTDataModule(config)
     elif args.dataset == "SVHN":
         data_module = SVHNDataModule(config)
     elif args.dataset == "STL10":
+        config["data_module"]["batch_size"] = 64
         data_module = STL10DataModule(config)
+    else:
+        raise NotImplementedError
 
-    learner = BCSUNetLearner(config)
-    # PATH = "../logs/BCS-UNet_STL10_1250/best/checkpoints/epoch=16-step=11967.ckpt"
-    # learner = BCSUNetLearner.load_from_checkpoint(PATH, config)
-    # print(learner.net)
-    # return
+    PATH = "../logs/SCSNet_STL10_1250/version_0/checkpoints/epoch=22-step=32360.ckpt"
+    learner = SCSNetLearner.load_from_checkpoint(PATH, config)
 
-    callbacks = [
-        ModelCheckpoint(**config["callbacks"]["checkpoint"]),
-        EarlyStopping(**config["callbacks"]["early_stopping"]),
-        LearningRateMonitor(),
-    ]
-
-    log_name = f"BCS-UNet_{args.dataset}_{int(config['sampling_ratio'] * 10000)}"
-    logger = TensorBoardLogger(save_dir="../logs", name=log_name)
-
-    message = f"Running BCS-UNet on {args.dataset} dataset. Sampling ratio = {config['sampling_ratio']}"
+    message = f"Running SCSNet on {args.dataset} dataset. Sampling ratio = {config['sampling_ratio']}"
     print("-" * 100)
     print(message)
     print("-" * 100)
 
     trainer = pl.Trainer(
         gpus=config["trainer"]["gpu"],
-        max_epochs=config["trainer"]["epochs"],
+        max_epochs=1,
         default_root_dir="../",
-        callbacks=callbacks,
         precision=(16 if config["trainer"]["fp16"] else 32),
-        logger=logger,
+        logger=None,
     )
-    trainer.fit(learner, data_module)
     trainer.test(learner, datamodule=data_module, ckpt_path="best")
 
 

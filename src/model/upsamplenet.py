@@ -4,6 +4,28 @@ from torch.nn import functional as F
 from model.layers import SNConv2d
 
 
+class ReshapeNet(nn.Module):
+    """The "initial reconstruction network" of SCSNet"""
+
+    def __init__(self, in_channels, block_size=4):
+        super().__init__()
+        self.block_size = block_size
+        self.conv = nn.Conv2d(in_channels, block_size ** 2, kernel_size=1)
+
+    def forward(self, x):
+        x = self.conv(x)
+        out = self._permute(x)
+        return out
+
+    def _permute(self, x):
+        B, C, H, W = x.shape
+        x = x.permute(0, 2, 3, 1)
+        x = x.view(B, H, W, self.block_size, self.block_size)
+        x = x.permute(0, 1, 3, 2, 4).contiguous()
+        out = x.view(-1, 1, H * self.block_size, W * self.block_size)
+        return out
+
+
 class UpsampleNet(nn.Module):
     def __init__(self, sampling_ratio, upsamplenet_config):
         super().__init__()
