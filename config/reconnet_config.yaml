@@ -34,6 +34,6 @@ callbacks:
     patience: 5
 
 trainer:
-  epochs: 1
+  epochs: 40
   gpu: 1
   fp16: True
