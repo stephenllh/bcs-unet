@@ -1,6 +1,5 @@
 ---
 model: "BCS-UNet"
-sampling_ratio: 0.0625
 bcs: True
 
 data_module:
@@ -15,7 +14,6 @@ net:
     out_channels_1: 16
     out_channels_2: 8
     use_transpose_conv: False
-    learnable_sc: False
     spectral_norm: True
   unet:
     init_type: "xavier"

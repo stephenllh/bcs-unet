@@ -1,16 +1,14 @@
 ---
 # This yaml file has the configurations for inference.
-# Not dependent on the main config file.
 
-gpu: 1  # change to 0 if use cpu
-checkpoint_path: "../saved_models/SCSNet_STL10_1250/checkpoints/last.ckpt"
-test_mode: True  # TODO: deprecate this feature later because no need to test anymore
+gpu: True
+checkpoint_path: "../logs/BCS-UNet_STL10_1875/best/checkpoints/best.ckpt"
+sampling_ratio: 0.1875
 measurement_matrix: "../input/phi_block_binary.npy"
-sampling_ratio: 0.125
-real_data:  # TODO: maybe need a better name?
-  - filename: "G_1250.mat"
-    min: 0.01 # 0.001
-    max: 0.01 # 0.0163
-  - filename: "H_1250.mat"
-    min: 0.0
-    max: 0.0184
+real_data:
+  - filename: "G_1875.mat" # "G_1250.mat"
+    min: 0.001 # 0.001
+    max: 0.12 # 0.0163
+  - filename: "H_1875.mat"
+    min: 0.001
+    max: 0.13
