@@ -1,49 +1,107 @@
+import os
+from pathlib import Path
+import time
+import yaml
+import numpy as np
+import cv2
+import matplotlib
+import matplotlib.pyplot as plt
+import scipy.ndimage
+import scipy.io
+import math
 import torch
-from torch.utils.data import DataLoader
-from data.data_module import ImagewoofDataset
 
-import pandas as pd
-from data.transforms import get_transforms
-from model.nets import SimpleNet
-from engine.learner import STL10Classifier
+# from torch.utils.data import DataLoader
+import pytorch_lightning as pl
+from engine.learner import BCSUNetLearner
+from utils import voltage2pixel
 
 
-def run():
-    print("Start.")
-    DATA_DIR = "C:/DL/Datasets/imagewoof"
-    dataframe = pd.read_csv(f"{DATA_DIR}/noisy_imagewoof.csv")
-    test_transforms = get_transforms(image_size=128, is_train=False)
-    test_dataset = ImagewoofDataset(
-        dataframe=dataframe,
-        data_dir=DATA_DIR,
-        mode="test",
-        tfms=test_transforms,
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+
+# TODO: merge (or refactor) to make it the main inference script.
+
+
+def load_config(config_path):
+    with open(os.path.join(config_path)) as file:
+        config = yaml.safe_load(file)
+    return config
+
+
+def setup():
+    inference_config = load_config("../config/inference_config.yaml")
+    checkpoint_path = inference_config["checkpoint_path"]
+    train_config_path = os.path.join(
+        Path(checkpoint_path).parent.parent, "hparams.yaml"
     )
-    test_loader = DataLoader(test_dataset, batch_size=32)
+    train_config = load_config(train_config_path)
 
-    ckpt_path = "checkpoint/last.ckpt"
-    simplenet = SimpleNet().cuda()
-    model = STL10Classifier.load_from_checkpoint(
-        checkpoint_path=ckpt_path, net=simplenet
+    # data_module = PyTorchDatasetDataModule(train_config)
+    learner = BCSUNetLearner.load_from_checkpoint(
+        checkpoint_path=inference_config["checkpoint_path"], config=train_config
     )
-    # checkpoint_callback = ModelCheckpoint(save_last=True, verbose=True, mode="min")
 
-    # Obtain predictions
-    predictions = []
-    filenames = []
-    for image_batch, filename_batch in test_loader:
-        # print(filename_batch)
-        pred_batch = model(image_batch.cuda())
-        pred_batch = torch.argmax(pred_batch, dim=1)
-        predictions.extend(pred_batch.cpu().detach().numpy().tolist())
-        filenames.extend(filename_batch)
+    trainer = pl.Trainer(
+        gpus=1 if inference_config["gpu"] else 0,
+        logger=False,
+        default_root_dir="../",
+    )
+    return learner, trainer
 
-    submission = pd.DataFrame(columns=["filename", "label"])
-    submission["filename"] = filenames
-    submission["label"] = predictions
-    submission.to_csv("submission.csv", index=False)
-    print("Done.")
+
+class RealDataset:
+    def __init__(self, inference_config):
+        self.real_data = inference_config["real_data"]
+        self.phi = np.load(inference_config["measurement_matrix"])
+        self.c = int(inference_config["sampling_ratio"] * 16)
+
+    def __getitem__(self, idx):
+        real_data = self.real_data[idx]
+        path = os.path.join("../inference_input", real_data["filename"])
+        y_input = scipy.io.loadmat(path)["y"]
+
+        y_input = torch.FloatTensor(y_input).permute(1, 0)
+        y_input -= y_input.min()
+        y_input /= real_data["max"]
+
+        # Permute is necessary because during sampling, we used "channel-last" format.
+        # Hence, we need to permute it to become channel-first to match PyTorch "channel-first" format
+        y_input = y_input.view(-1, self.c)
+        y_input = y_input.permute(1, 0).contiguous()
+        y_input = y_input.view(
+            -1, int(math.sqrt(y_input.shape[-1])), int(math.sqrt(y_input.shape[-1]))
+        )
+
+        y_input = voltage2pixel(
+            y_input, self.phi[: self.c], real_data["min"], real_data["max"]
+        )
+        return y_input
+
+    def __len__(self):
+        return len(self.real_data)
+
+
+def predict_one():
+    # TODO: for standard dataset test set.
+    return
+
+
+def deploy(learner):
+    """Real experimental data"""
+    inference_config = load_config("../config/inference_config.yaml")
+    real_dataset = RealDataset(inference_config)
+    for x in real_dataset:
+        prediction = learner(x.unsqueeze(0))
+        prediction = prediction.squeeze().squeeze().cpu().detach().numpy()
+        # plt.imshow(predictions, cmap="gray")
+        # plt.axis("off")
+        prediction = scipy.ndimage.zoom(prediction, 8, order=0, mode="nearest")
+        cv2.imwrite(f"../temp/{time.time()}.png", prediction * 255)
 
 
 if __name__ == "__main__":
-    run()
+    learner, trainer = setup()
+    # get_test_metrics(data_module, learner, trainer)
+    # predict_test_set(data_module, learner, trainer)
+    deploy(learner)

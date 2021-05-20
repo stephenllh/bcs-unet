@@ -41,7 +41,6 @@ def setup():
         logger=False,
         default_root_dir="../",
         progress_bar_refresh_rate=20,
-        limit_test_batches=(2 if inference_config["test_mode"] else 1.0),
     )
     return data_module, learner, trainer
 

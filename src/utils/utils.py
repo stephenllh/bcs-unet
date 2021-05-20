@@ -20,20 +20,15 @@ def voltage2pixel(y, phi, low, high):
 
     phi = torch.from_numpy(phi).float()
 
-    if y.dim() == 4:
-        if y.shape[0] == 1:
-            y = y.squeeze(dim=0)
-        else:
-            raise NotImplementedError
+    if y.dim() == 4 and y.shape[0] == 1:
+        y = y.squeeze(dim=0)
 
-    if phi.dim() == 4:
-        if phi.shape[1] == 1:
-            phi = phi.squeeze(dim=1)
-        else:
-            raise NotImplementedError
+    if phi.dim() == 4 and phi.shape[1] == 1:
+        phi = phi.squeeze(dim=1)
 
     term1 = y / (high - low)
     term2 = (phi.sum(dim=(1, 2)) * low / (high - low)).unsqueeze(-1).unsqueeze(-1)
+
     y_pixel_scale = term1 - term2
     return y_pixel_scale
 
