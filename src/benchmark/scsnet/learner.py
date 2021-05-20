@@ -67,14 +67,11 @@ class SCSNetLearner(pl.LightningModule):
         preds2 = self.net2(preds1).float()
         for metric_name in self.config["learner"]["test_metrics"]:
             metric = self.__getattr__(f"test_{metric_name}")
-            metric(preds2, targets)
-
-    def test_epoch_end(self, outputs):
-        for metric_name in self.config["learner"]["test_metrics"]:
-            metric = self.__getattr__(f"test_{metric_name}")
             self.log(
                 f"test_{metric_name}",
-                metric.compute(),
+                metric(preds2.float(), targets),
+                on_step=False,
+                on_epoch=True,
                 prog_bar=True,
             )
 

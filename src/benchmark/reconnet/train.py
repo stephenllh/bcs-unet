@@ -44,7 +44,7 @@ def run():
     ]
 
     sampling_ratio = config["sampling_ratio"]
-    log_name = f"ReconNet_{args.dataset}_{int(sampling_ratio * 10000)}"
+    log_name = f"ReconNet_{args.dataset}_{int(sampling_ratio * 10000):04d}"
     logger = TensorBoardLogger(save_dir="../logs", name=log_name)
 
     message = f"Running ReconNet on {args.dataset} dataset. Sampling ratio = {sampling_ratio * 100}%"

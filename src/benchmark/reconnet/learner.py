@@ -66,6 +66,8 @@ class ReconNetLearner(pl.LightningModule):
                 f"test_{metric_name}",
                 metric(preds.float(), targets),
                 prog_bar=True,
+                on_step=False,
+                on_epoch=True,
             )
 
     def _set_metrics(self, config):
