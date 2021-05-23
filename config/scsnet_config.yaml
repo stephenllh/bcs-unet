@@ -28,6 +28,7 @@ callbacks:
   checkpoint:
     monitor: "val_loss"
     save_last: True
+    filename: "best"
   early_stopping:
     monitor: "val_loss"
     patience: 5

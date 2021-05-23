@@ -5,7 +5,7 @@
 
 <br/>
 <p align="center">
-  <img src="/image/image.png" alt="Competition image" width="500" height="500"/>
+  <img src="/image/image.png" alt="Image" width="500" height="500"/>
 </p>
 
 

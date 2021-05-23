@@ -52,7 +52,7 @@ def run():
         LearningRateMonitor(),
     ]
 
-    log_name = f"BCS-UNet_{args.dataset}_{int(config['sampling_ratio'] * 10000):04d}"
+    log_name = f"BCSUNet_{args.dataset}_{int(config['sampling_ratio'] * 10000):04d}"
     logger = TensorBoardLogger(save_dir="../logs", name=log_name)
 
     message = f"Running BCS-UNet on {args.dataset} dataset. Sampling ratio = {config['sampling_ratio']}"
@@ -67,7 +67,6 @@ def run():
         callbacks=callbacks,
         precision=(16 if config["trainer"]["fp16"] else 32),
         logger=logger,
-        move_metrics_to_cpu=(args.dataset == "STL10"),
     )
     trainer.fit(learner, data_module)
     trainer.test(learner, datamodule=data_module, ckpt_path="best")

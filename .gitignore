@@ -150,6 +150,7 @@ cython_debug/
 **/inference_images
 **/wandb
 **/saved_models
+**/src/tests
 
 # Data files
 *.csv

@@ -2,13 +2,22 @@
 # This yaml file has the configurations for inference.
 
 gpu: True
-checkpoint_path: "../logs/BCS-UNet_STL10_1875/best/checkpoints/best.ckpt"
-sampling_ratio: 0.1875
+checkpoint_path: "../logs/BCSUNet_SVHN_2500/best/checkpoints/last.ckpt"
+sampling_ratio: 0.25
 measurement_matrix: "../input/phi_block_binary.npy"
 real_data:
-  - filename: "G_1875.mat" # "G_1250.mat"
-    min: 0.001 # 0.001
-    max: 0.12 # 0.0163
-  - filename: "H_1875.mat"
+  - filename: "G.mat" 
     min: 0.001
-    max: 0.13
+    max: 0.105
+  - filename: "H.mat"
+    min: 0.001
+    max: 0.105
+  - filename: "plus.mat"
+    min: 0.01
+    max: 0.105
+  - filename: "S.mat"
+    min: 0.001
+    max: 0.105
+  - filename: "R.mat"
+    min: 0.001
+    max: 0.12

@@ -1,11 +1,12 @@
 import os
 from pathlib import Path
 import time
-import yaml
+import warnings
 import numpy as np
 import cv2
-import matplotlib
-import matplotlib.pyplot as plt
+
+# import matplotlib
+# import matplotlib.pyplot as plt
 import scipy.ndimage
 import scipy.io
 import math
@@ -14,19 +15,11 @@ import torch
 # from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from engine.learner import BCSUNetLearner
-from utils import voltage2pixel
+from utils import voltage2pixel, load_config
 
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
-
-# TODO: merge (or refactor) to make it the main inference script.
-
-
-def load_config(config_path):
-    with open(os.path.join(config_path)) as file:
-        config = yaml.safe_load(file)
-    return config
+warnings.simplefilter("ignore")
 
 
 def setup():
@@ -37,7 +30,6 @@ def setup():
     )
     train_config = load_config(train_config_path)
 
-    # data_module = PyTorchDatasetDataModule(train_config)
     learner = BCSUNetLearner.load_from_checkpoint(
         checkpoint_path=inference_config["checkpoint_path"], config=train_config
     )
@@ -60,6 +52,8 @@ class RealDataset:
         real_data = self.real_data[idx]
         path = os.path.join("../inference_input", real_data["filename"])
         y_input = scipy.io.loadmat(path)["y"]
+
+        y_input = y_input[np.mod(np.arange(len(y_input)), len(y_input) // 64) < self.c]  # discard extra measurements
 
         y_input = torch.FloatTensor(y_input).permute(1, 0)
         y_input -= y_input.min()
@@ -94,10 +88,23 @@ def deploy(learner):
     for x in real_dataset:
         prediction = learner(x.unsqueeze(0))
         prediction = prediction.squeeze().squeeze().cpu().detach().numpy()
-        # plt.imshow(predictions, cmap="gray")
-        # plt.axis("off")
+
         prediction = scipy.ndimage.zoom(prediction, 8, order=0, mode="nearest")
         cv2.imwrite(f"../temp/{time.time()}.png", prediction * 255)
+    print("Done reconstructing SPI images.")
+
+
+def predict_test_set():
+    """Make inference on the test set"""
+    inference_config = load_config("../config/inference_config.yaml")
+    real_dataset = RealDataset(inference_config)
+    for x in real_dataset:
+        prediction = learner(x.unsqueeze(0))
+        prediction = prediction.squeeze().squeeze().cpu().detach().numpy()
+
+        prediction = scipy.ndimage.zoom(prediction, 8, order=0, mode="nearest")
+        cv2.imwrite(f"../temp/{time.time()}.png", prediction * 255)
+    print("Done reconstructing SPI images.")
 
 
 if __name__ == "__main__":

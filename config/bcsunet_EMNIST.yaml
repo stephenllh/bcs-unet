@@ -15,7 +15,6 @@ net:
     out_channels_1: 16
     out_channels_2: 8
     use_transpose_conv: False
-    learnable_sc: True
     spectral_norm: True
   unet:
     init_type: "xavier"
@@ -43,6 +42,7 @@ callbacks:
   checkpoint:
     monitor: "val_loss"
     save_last: True
+    filename: "best"
   early_stopping:
     monitor: "val_loss"
     patience: 5
