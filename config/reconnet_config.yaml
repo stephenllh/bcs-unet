@@ -1,6 +1,5 @@
 ---
 model: "reconnet"
-sampling_ratio: 0.0625
 img_dim: 32
 bcs: True
 

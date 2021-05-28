@@ -1,6 +1,5 @@
 ---
 model: "SCSNet"
-sampling_ratio: 0.0625
 bcs: True
 
 data_module:

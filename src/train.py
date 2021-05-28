@@ -70,10 +70,6 @@ def run():
     )
     trainer.fit(learner, data_module)
     trainer.test(learner, datamodule=data_module, ckpt_path="best")
-    # if args.dataset != "STL10":
-    #     trainer.test(learner, datamodule=data_module, ckpt_path="best")
-    # else:
-    #     print("Please run the evaluate.py script separately, because it takes up too much GPU RAM.")
 
 
 if __name__ == "__main__":

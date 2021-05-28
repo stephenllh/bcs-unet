@@ -91,10 +91,10 @@ def deploy(learner):
 
         prediction = scipy.ndimage.zoom(prediction, 8, order=0, mode="nearest")
         cv2.imwrite(f"../temp/{time.time()}.png", prediction * 255)
-    print("Done reconstructing SPI images.")
+    print("Finished reconstructing SPI images.")
 
 
-def predict_test_set():
+def predict_test_set():  # TODO: add an argument for dataset name
     """Make inference on the test set"""
     inference_config = load_config("../config/inference_config.yaml")
     real_dataset = RealDataset(inference_config)
@@ -104,7 +104,7 @@ def predict_test_set():
 
         prediction = scipy.ndimage.zoom(prediction, 8, order=0, mode="nearest")
         cv2.imwrite(f"../temp/{time.time()}.png", prediction * 255)
-    print("Done reconstructing SPI images.")
+    print("Finished predicting the test set.")
 
 
 if __name__ == "__main__":

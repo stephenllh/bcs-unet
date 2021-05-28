@@ -19,6 +19,13 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 parser = argparse.ArgumentParser(description="Wheat detection with EfficientDet")
 parser.add_argument("-d", "--dataset", type=str, help="'EMNIST', 'SVHN', or 'STL10'")
+parser.add_argument(
+    "-s",
+    "--sampling_ratio",
+    type=float,
+    required=True,
+    help="Sampling ratio in percentage",
+)
 args = parser.parse_args()
 
 
@@ -26,6 +33,7 @@ def run():
     seed_everything(seed=0, workers=True)
 
     config = load_config("../config/scsnet_config.yaml")
+    config["sampling_ratio"] = args.sampling_ratio / 100
 
     if args.dataset == "EMNIST":
         data_module = EMNISTDataModule(config)
@@ -55,14 +63,10 @@ def run():
     trainer = pl.Trainer(
         gpus=config["trainer"]["gpu"],
         max_epochs=config["trainer"]["epochs"],
-        # max_epochs=1,
         default_root_dir="../",
         callbacks=callbacks,
         precision=(16 if config["trainer"]["fp16"] else 32),
         logger=logger,
-        # limit_train_batches=1,
-        # limit_val_batches=1,
-        # limit_test_batches=2,
     )
     trainer.fit(learner, data_module)
     trainer.test(learner, datamodule=data_module, ckpt_path="best")

@@ -18,6 +18,13 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 parser = argparse.ArgumentParser(description="Wheat detection with EfficientDet")
 parser.add_argument("-d", "--dataset", type=str, help="'EMNIST', 'SVHN', or 'STL10'")
+parser.add_argument(
+    "-s",
+    "--sampling_ratio",
+    type=float,
+    required=True,
+    help="Sampling ratio in percentage",
+)
 args = parser.parse_args()
 
 
@@ -25,6 +32,7 @@ def run():
     seed_everything(seed=0, workers=True)
 
     config = load_config("../config/reconnet_config.yaml")
+    config["sampling_ratio"] = args.sampling_ratio / 100
 
     if args.dataset == "EMNIST":
         data_module = EMNISTDataModule(config)
