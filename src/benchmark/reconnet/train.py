@@ -16,7 +16,7 @@ from utils import load_config
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-parser = argparse.ArgumentParser(description="Wheat detection with EfficientDet")
+parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--dataset", type=str, help="'EMNIST', 'SVHN', or 'STL10'")
 parser.add_argument(
     "-s",

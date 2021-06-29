@@ -37,18 +37,17 @@ class ReconNetLearner(pl.LightningModule):
 
         self.log(f"{mode}_loss", loss, prog_bar=True)
 
-        # preds_ = preds.float().detach().cpu()
-        # targets_ = targets.detach().cpu()
+        preds_ = preds.float().detach()
 
-        # # Log validation metrics
-        # if mode == "val":
-        #     for metric_name in self.config["learner"]["metrics"]:
-        #         metric = self.__getattr__(f"{mode}_{metric_name}")
-        #         self.log(
-        #             f"{mode}_{metric_name}",
-        #             metric(preds_, targets_),
-        #             prog_bar=True,
-        #         )
+        # Log validation metrics
+        if mode == "val":
+            for metric_name in self.config["learner"]["val_metrics"]:
+                metric = self.__getattr__(f"{mode}_{metric_name}")
+                self.log(
+                    f"{mode}_{metric_name}",
+                    metric(preds_, targets),
+                    prog_bar=True,
+                )
         return loss
 
     def training_step(self, batch, batch_idx):

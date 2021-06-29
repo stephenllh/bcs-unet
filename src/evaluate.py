@@ -13,12 +13,20 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 parser = argparse.ArgumentParser(description="Wheat detection with EfficientDet")
 parser.add_argument("-d", "--dataset", type=str, help="'EMNIST', 'SVHN', or 'STL10'")
+parser.add_argument(
+    "-s",
+    "--sampling_ratio",
+    type=float,
+    required=True,
+    help="Sampling ratio in percentage",
+)
+
 args = parser.parse_args()
 
 
 def run():
     seed_everything(seed=0, workers=True)
-    path = "../logs/BCS-UNet_STL10_1875"
+    path = f"../logs/BCSUNet_{args.dataset}_{int(args.sampling_ratio * 10000)}"
     config = load_config(f"{path}/version_0/hparams.yaml")
 
     if args.dataset == "EMNIST":
@@ -26,7 +34,6 @@ def run():
     elif args.dataset == "SVHN":
         data_module = SVHNDataModule(config)
     elif args.dataset == "STL10":
-        config["data_module"]["batch_size"] = 32
         data_module = STL10DataModule(config)
     else:
         raise NotImplementedError
@@ -39,7 +46,7 @@ def run():
         default_root_dir="../",
         logger=False,
     )
-    trainer.test(learner, datamodule=data_module, ckpt_path="best")
+    trainer.test(learner, datamodule=data_module)
 
 
 if __name__ == "__main__":

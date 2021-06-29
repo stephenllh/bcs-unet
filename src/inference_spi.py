@@ -4,15 +4,10 @@ import time
 import warnings
 import numpy as np
 import cv2
-
-# import matplotlib
-# import matplotlib.pyplot as plt
 import scipy.ndimage
 import scipy.io
 import math
 import torch
-
-# from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from engine.learner import BCSUNetLearner
 from utils import voltage2pixel, load_config
@@ -24,7 +19,10 @@ warnings.simplefilter("ignore")
 
 def setup():
     inference_config = load_config("../config/inference_config.yaml")
-    checkpoint_path = inference_config["checkpoint_path"]
+    ds = inference_config["dataset"]
+    sr = inference_config["sampling_ratio"]
+    checkpoint_path = f"../logs/BCSUNet_{ds}_{sr}/best/checkpoints/last.ckpt"
+
     train_config_path = os.path.join(
         Path(checkpoint_path).parent.parent, "hparams.yaml"
     )
@@ -53,7 +51,9 @@ class RealDataset:
         path = os.path.join("../inference_input", real_data["filename"])
         y_input = scipy.io.loadmat(path)["y"]
 
-        y_input = y_input[np.mod(np.arange(len(y_input)), len(y_input) // 64) < self.c]  # discard extra measurements
+        y_input = y_input[
+            np.mod(np.arange(len(y_input)), len(y_input) // 64) < self.c
+        ]  # discard extra measurements
 
         y_input = torch.FloatTensor(y_input).permute(1, 0)
         y_input -= y_input.min()
@@ -94,21 +94,6 @@ def deploy(learner):
     print("Finished reconstructing SPI images.")
 
 
-def predict_test_set():  # TODO: add an argument for dataset name
-    """Make inference on the test set"""
-    inference_config = load_config("../config/inference_config.yaml")
-    real_dataset = RealDataset(inference_config)
-    for x in real_dataset:
-        prediction = learner(x.unsqueeze(0))
-        prediction = prediction.squeeze().squeeze().cpu().detach().numpy()
-
-        prediction = scipy.ndimage.zoom(prediction, 8, order=0, mode="nearest")
-        cv2.imwrite(f"../temp/{time.time()}.png", prediction * 255)
-    print("Finished predicting the test set.")
-
-
 if __name__ == "__main__":
     learner, trainer = setup()
-    # get_test_metrics(data_module, learner, trainer)
-    # predict_test_set(data_module, learner, trainer)
     deploy(learner)
