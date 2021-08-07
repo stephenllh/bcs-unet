@@ -45,15 +45,11 @@ def run():
         data_module = STL10DataModule(config)
 
     learner = BCSUNetLearner(config)
-    # print(learner.net)
-    # return
-
     callbacks = [
         ModelCheckpoint(**config["callbacks"]["checkpoint"]),
         EarlyStopping(**config["callbacks"]["early_stopping"]),
         LearningRateMonitor(),
     ]
-
     log_name = f"BCSUNet_{args.dataset}_{int(config['sampling_ratio'] * 10000):04d}"
     logger = TensorBoardLogger(save_dir="../logs", name=log_name)
 
