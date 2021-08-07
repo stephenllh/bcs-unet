@@ -2,7 +2,7 @@
 # This yaml file has the configurations for inference.
 
 gpu: True
-dataset: "STL10"
+# dataset: "STL10"
 sampling_ratio: 0.125
 measurement_matrix: "../input/phi_block_binary.npy"
 real_data:
