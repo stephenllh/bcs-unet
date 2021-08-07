@@ -10,14 +10,11 @@ import scipy.io
 import math
 import torch
 import pytorch_lightning as pl
-from engine.learner import BCSUNetLearner
+from .learner import ReconNetLearner
 from utils import voltage2pixel, load_config
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-d", "--dataset", type=str, required=True, help="'EMNIST', 'SVHN', or 'STL10'"
-)
 parser.add_argument(
     "-s",
     "--sampling_ratio",
@@ -33,26 +30,23 @@ warnings.simplefilter("ignore")
 
 def setup():
     inference_config = load_config("../config/inference_config.yaml")
-    ds = args.dataset
     sr = args.sampling_ratio
 
-    checkpoint_folder = f"../logs/ReconNet_{ds}_{int(sr * 100):04d}/best"
+    checkpoint_folder = f"../logs/ReconNet_STL10_{int(sr * 100):04d}/best"
 
     if not os.path.exists(checkpoint_folder):
         run_name = os.listdir(Path(checkpoint_folder).parent)[0]
         checkpoint_path = (
-            f"{Path(checkpoint_folder).parent}/{run_name}/checkpoints/best.ckpt"
+            f"{Path(checkpoint_folder).parent}/{run_name}/checkpoints/last.ckpt"
         )
         print(
             f"The checkpoint from the run '{run_name}' is selected by default. \
                 If this is not intended, change the name of the preferred checkpoint folder to 'best'."
         )
     else:
-        checkpoint_path = f"{checkpoint_folder}/checkpoints/best.ckpt"
+        checkpoint_path = f"{checkpoint_folder}/checkpoints/last.ckpt"
 
-    learner = BCSUNetLearner.load_from_checkpoint(
-        checkpoint_path=checkpoint_path
-    )
+    learner = ReconNetLearner.load_from_checkpoint(checkpoint_path=checkpoint_path)
 
     trainer = pl.Trainer(
         gpus=1 if inference_config["gpu"] else 0,
@@ -98,21 +92,18 @@ class RealDataset:
         return len(self.real_data)
 
 
-def predict_one():
-    # TODO: for standard dataset test set.
-    return
-
-
 def deploy(learner):
     """Real experimental data"""
     inference_config = load_config("../config/inference_config.yaml")
+    sr = args.sampling_ratio
+    directory = f"../inference_images/ReconNet/SPI/{int(sr * 100):04d}"
+    os.makedirs(directory, exist_ok=True)
     real_dataset = RealDataset(inference_config)
     for x in real_dataset:
         prediction = learner(x.unsqueeze(0))
         prediction = prediction.squeeze().squeeze().cpu().detach().numpy()
-
-        prediction = scipy.ndimage.zoom(prediction, 8, order=0, mode="nearest")
-        cv2.imwrite(f"../temp/{time.time()}.png", prediction * 255)
+        prediction = scipy.ndimage.zoom(prediction, 4, order=0, mode="nearest")
+        cv2.imwrite(f"{directory}/{time.time()}.png", prediction * 255)
     print("Finished reconstructing SPI images.")
 
 

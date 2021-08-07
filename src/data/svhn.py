@@ -28,8 +28,6 @@ class SVHNDataset(BaseDataset):
 
 
 class SVHNDataModule(pl.LightningDataModule):
-    """Pytorch Lightning Data Module for PyTorch datasets, e.g. MNIST, FMNIST, SVHN, etc."""
-
     def __init__(self, config):
         super().__init__()
         self.config = config

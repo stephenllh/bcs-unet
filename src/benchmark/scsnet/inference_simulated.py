@@ -1,6 +1,6 @@
 import os
-import numpy as np
 import argparse
+import numpy as np
 from pathlib import Path
 import warnings
 import cv2
@@ -8,7 +8,7 @@ import scipy.ndimage
 from data.emnist import EMNISTDataModule
 from data.svhn import SVHNDataModule
 from data.stl10 import STL10DataModule
-from engine.learner import BCSUNetLearner
+from .learner import SCSNetLearner
 from utils import load_config
 
 
@@ -30,10 +30,11 @@ warnings.simplefilter("ignore")
 
 
 def run():
+    # inference_config = load_config("../config/inference_config.yaml")
     dataset = args.dataset
     sr = args.sampling_ratio
     checkpoint_path = (
-        f"../logs/BCSUNet_{dataset}_{int(sr * 100):04d}/best/checkpoints/last.ckpt"
+        f"../logs/SCSNet_{dataset}_{int(sr * 100):04d}/best/checkpoints/last.ckpt"
     )
     train_config_path = os.path.join(
         Path(checkpoint_path).parent.parent, "hparams.yaml"
@@ -43,22 +44,25 @@ def run():
 
     if dataset == "EMNIST":
         data_module = EMNISTDataModule(train_config)
+        train_config["img_dim"] = 32
     elif dataset == "SVHN":
         data_module = SVHNDataModule(train_config)
+        train_config["img_dim"] = 32
     elif dataset == "STL10":
         data_module = STL10DataModule(train_config)
+        train_config["img_dim"] = 96
 
-    learner = BCSUNetLearner.load_from_checkpoint(
+    learner = SCSNetLearner.load_from_checkpoint(
         checkpoint_path=checkpoint_path, config=train_config, strict=False
     )
 
-    message = f"Inference: BCS-UNet on {dataset} dataset. Sampling ratio = {train_config['sampling_ratio']}"
+    message = f"Inference: SCSNet on {dataset} dataset. Sampling ratio = {train_config['sampling_ratio']}"
     print(message)
 
     data_module.setup()
     ds = data_module.test_dataset
 
-    directory = f"../inference_images/BCSUNet/{dataset}/{int(sr * 100):04d}"
+    directory = f"../inference_images/SCSNet/{dataset}/{int(sr * 100):04d}"
     os.makedirs(directory, exist_ok=True)
 
     for i in np.linspace(0, len(ds) - 1, 30, dtype=int):

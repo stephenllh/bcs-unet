@@ -51,8 +51,13 @@ def create_patches(root_dir, size):
     print(f"Creating {size}x{size} image patches for STL10 test set.")
     dataset_dir = os.path.join(root_dir, "test_images")
     save_dir = os.path.join(root_dir, "test_images_32x32")
+
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
+
+    if not os.path.exists(dataset_dir):
+        os.mkdir(dataset_dir)
+
     filenames = os.listdir(dataset_dir)
     for filename in filenames:
         img = cv2.imread(f"{dataset_dir}/{filename}")

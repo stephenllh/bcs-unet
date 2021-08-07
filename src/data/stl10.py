@@ -61,8 +61,6 @@ class STL10ReconnetTestDataset(BaseDataset):
 
 
 class STL10DataModule(pl.LightningDataModule):
-    """Pytorch Lightning Data Module for PyTorch datasets, e.g. MNIST, FMNIST, SVHN, etc."""
-
     def __init__(self, config, reconnet=False):
         super().__init__()
         self.config = config
