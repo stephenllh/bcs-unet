@@ -41,10 +41,11 @@ def run():
         checkpoint_path = (
             f"{Path(checkpoint_folder).parent}/{run_name}/checkpoints/last.ckpt"
         )
-        print(
-            f"The checkpoint from the run '{run_name}' is selected by default. \
-                If this is not intended, change the name of the preferred checkpoint folder to 'best'."
+        message = (
+            f"The checkpoint from the run '{run_name}' is selected by default."
+            + "If this is not intended, change the name of the preferred checkpoint folder to 'best'."
         )
+        print(message)
     else:
         checkpoint_path = f"{checkpoint_folder}/checkpoints/last.ckpt"
 

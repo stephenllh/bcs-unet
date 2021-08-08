@@ -57,10 +57,10 @@ def setup():
 
 
 class RealDataset:
-    def __init__(self, inference_config):
+    def __init__(self, sampling_ratio, inference_config):
         self.real_data = inference_config["real_data"]
         self.phi = np.load(inference_config["measurement_matrix"])
-        self.c = int(inference_config["sampling_ratio"] * 16)
+        self.c = int(sampling_ratio / 100 * 16)
 
     def __getitem__(self, idx):
         real_data = self.real_data[idx]
@@ -103,7 +103,7 @@ def deploy(learner):
     sr = args.sampling_ratio
     directory = f"../inference_images/SCSNet/SPI/{int(sr * 100):04d}"
     os.makedirs(directory, exist_ok=True)
-    real_dataset = RealDataset(inference_config)
+    real_dataset = RealDataset(sr, inference_config)
     for x in real_dataset:
         prediction = learner(x.unsqueeze(0))
         prediction = prediction.squeeze().squeeze().cpu().detach().numpy()

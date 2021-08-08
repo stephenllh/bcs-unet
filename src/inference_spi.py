@@ -36,23 +36,22 @@ def setup():
     ds = args.dataset
     sr = args.sampling_ratio
 
-    checkpoint_folder = f"../logs/ReconNet_{ds}_{int(sr * 100):04d}/best"
+    checkpoint_folder = f"../logs/BCSUNet_{ds}_{int(sr * 100):04d}/best"
 
     if not os.path.exists(checkpoint_folder):
         run_name = os.listdir(Path(checkpoint_folder).parent)[0]
         checkpoint_path = (
             f"{Path(checkpoint_folder).parent}/{run_name}/checkpoints/best.ckpt"
         )
-        print(
-            f"The checkpoint from the run '{run_name}' is selected by default. \
-                If this is not intended, change the name of the preferred checkpoint folder to 'best'."
+        message = (
+            f"The checkpoint from the run '{run_name}' is selected by default."
+            + "If this is not intended, change the name of the preferred checkpoint folder to 'best'."
         )
+        print(message)
     else:
         checkpoint_path = f"{checkpoint_folder}/checkpoints/best.ckpt"
 
-    learner = BCSUNetLearner.load_from_checkpoint(
-        checkpoint_path=checkpoint_path
-    )
+    learner = BCSUNetLearner.load_from_checkpoint(checkpoint_path=checkpoint_path)
 
     trainer = pl.Trainer(
         gpus=1 if inference_config["gpu"] else 0,
@@ -63,10 +62,10 @@ def setup():
 
 
 class RealDataset:
-    def __init__(self, inference_config):
+    def __init__(self, sampling_ratio, inference_config):
         self.real_data = inference_config["real_data"]
         self.phi = np.load(inference_config["measurement_matrix"])
-        self.c = int(inference_config["sampling_ratio"] * 16)
+        self.c = int(sampling_ratio / 100 * 16)
 
     def __getitem__(self, idx):
         real_data = self.real_data[idx]
@@ -98,21 +97,20 @@ class RealDataset:
         return len(self.real_data)
 
 
-def predict_one():
-    # TODO: for standard dataset test set.
-    return
-
-
 def deploy(learner):
     """Real experimental data"""
     inference_config = load_config("../config/inference_config.yaml")
-    real_dataset = RealDataset(inference_config)
+    sr = args.sampling_ratio
+    real_dataset = RealDataset(sr, inference_config)
+    save_dir = f"../inference_images/BCSUNet/SPI/{int(sr * 100):04d}_{args.dataset}"
+    os.makedirs(save_dir, exist_ok=True)
+
     for x in real_dataset:
         prediction = learner(x.unsqueeze(0))
         prediction = prediction.squeeze().squeeze().cpu().detach().numpy()
-
         prediction = scipy.ndimage.zoom(prediction, 8, order=0, mode="nearest")
-        cv2.imwrite(f"../temp/{time.time()}.png", prediction * 255)
+        cv2.imwrite(f"{save_dir}/{time.time()}.png", prediction * 255)
+
     print("Finished reconstructing SPI images.")
 
 

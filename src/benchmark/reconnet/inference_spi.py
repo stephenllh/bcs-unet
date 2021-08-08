@@ -35,14 +35,15 @@ def setup():
     checkpoint_folder = f"../logs/ReconNet_STL10_{int(sr * 100):04d}/best"
 
     if not os.path.exists(checkpoint_folder):
-        run_name = os.listdir(Path(checkpoint_folder).parent)[0]
+        run_name = os.listdir(Path(checkpoint_folder).parent)[-1]
         checkpoint_path = (
             f"{Path(checkpoint_folder).parent}/{run_name}/checkpoints/last.ckpt"
         )
-        print(
-            f"The checkpoint from the run '{run_name}' is selected by default. \
-                If this is not intended, change the name of the preferred checkpoint folder to 'best'."
+        message = (
+            f"The checkpoint from the run '{run_name}' is selected by default. "
+            + "If this is not intended, change the name of the preferred checkpoint folder to 'best'."
         )
+        print(message)
     else:
         checkpoint_path = f"{checkpoint_folder}/checkpoints/last.ckpt"
 
@@ -57,10 +58,10 @@ def setup():
 
 
 class RealDataset:
-    def __init__(self, inference_config):
+    def __init__(self, sampling_ratio, inference_config):
         self.real_data = inference_config["real_data"]
         self.phi = np.load(inference_config["measurement_matrix"])
-        self.c = int(inference_config["sampling_ratio"] * 16)
+        self.c = int(sampling_ratio / 100 * 16)
 
     def __getitem__(self, idx):
         real_data = self.real_data[idx]
@@ -98,7 +99,7 @@ def deploy(learner):
     sr = args.sampling_ratio
     directory = f"../inference_images/ReconNet/SPI/{int(sr * 100):04d}"
     os.makedirs(directory, exist_ok=True)
-    real_dataset = RealDataset(inference_config)
+    real_dataset = RealDataset(sr, inference_config)
     for x in real_dataset:
         prediction = learner(x.unsqueeze(0))
         prediction = prediction.squeeze().squeeze().cpu().detach().numpy()
